@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>📦 庫存管理 - 活力電商後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        /* 🌟 RWD 手機版導覽列與佈局修正 */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .sidebar {
+                position: relative !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 1rem !important;
+                flex-direction: row !important;
+                overflow-x: auto;
+                white-space: nowrap;
+                display: flex;
+                gap: 10px;
+            }
+            .sidebar h2, .sidebar hr, .sidebar small, .sidebar span { display: none !important; }
+            .nav-item {
+                display: inline-block !important;
+                padding: 0.6rem 1rem !important;
+                margin-bottom: 0 !important;
+                font-size: 0.9rem !important;
+            }
+            .main-content { margin-left: 0 !important; padding: 1.5rem !important; }
+            .page-title { font-size: 1.8rem !important; }
+        }
+
+        /* 表格微調 */
+        .product-table-card {
+            border-radius: 30px !important;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #666;
+            padding: 1.2rem 1rem;
+        }
+    </style>
+</head>
+
+<body class="backend">
+    <div class="app-container">
+        <nav class="sidebar">
+            <h2>🛍️ 系統後台</h2>
+            <div class="mb-4 px-2 py-3 border-bottom border-white border-opacity-25">
+                <small class="text-white-50 d-block mb-1">管理權限已驗證</small>
+                <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
+            </div>
+            
+            <a href="admin.html" class="nav-item">📊 營運儀表板</a>
+            <a href="customers.html" class="nav-item">👥 客戶管理</a>
+            <a href="products.html" class="nav-item active">📦 庫存管理</a>
+            
+            <div style="flex-grow: 1;"></div> 
+            <hr class="text-white-50">
+            <a href="#" onclick="handleLogout()" class="nav-item text-danger bg-white bg-opacity-10">🚪 登出系統</a>
+            <a href="../index.html" class="nav-item text-muted small mt-2">⬅️ 返回商店前台</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
+                <h1 class="page-title mb-0" id="page-title">產品庫存管理 📦</h1>
+                <div class="d-flex gap-3">
+                    <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">＋ 上架產品</button>
+                    <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="toggleView()">🗑️ 產品回收桶</button>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 product-table-card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>產品名稱</th>
+                                <th>產品編號</th>
+                                <th>定價 (USD)</th>
+                                <th>庫存量</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list">
+                            <tr><td colspan="6" class="text-center py-5 text-muted">正在同步資料庫數據...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 25px; border: none;">
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">📦 新增產品資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <form id="addForm">
+                        <div class="mb-3"><label class="form-label">產品名稱</label><input type="text" id="in_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">產品編號</label><input type="text" id="in_code" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">定價</label><input type="number" id="in_price" class="form-control" step="0.01" required></div>
+                        <div class="mb-3"><label class="form-label">庫存量</label><input type="number" id="in_stock" class="form-control" required></div>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">確認上架</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 25px; border: 3px solid var(--theme-orange-deep);">
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">✏️ 調整產品資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <form id="editForm">
+                        <input type="hidden" id="edit_id">
+                        <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="edit_name" class="form-control bg-light" readonly></div>
+                        <div class="mb-3"><label class="form-label fw-bold text-primary">調整定價 (USD)</label><input type="number" id="edit_price" class="form-control form-control-lg border-primary" step="0.01" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold text-success">調整庫存量</label><input type="number" id="edit_stock" class="form-control form-control-lg border-success" required></div>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">✅ 儲存修改</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
+    <script>
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let showDeleted = false;
+        let currentProducts = [];
+
+        const adminData = localStorage.getItem('admin_user');
+        if (!adminData) window.location.href = 'login.html';
+        else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
+
+        async function fetchProducts() {
+            try {
+                const { data, error } = await client.from('products').select('*').eq('is_deleted', showDeleted).order('id', { ascending: true });
+                if (error) throw error;
+                currentProducts = data;
+                render(data);
+            } catch (err) {
+                document.getElementById('product-list').innerHTML = `<tr><td colspan="6" class="text-center text-danger">讀取失敗</td></tr>`;
+            }
+        }
+
+        function render(list) {
+            const tbody = document.getElementById('product-list');
+            tbody.innerHTML = list.map(p => `
+                <tr>
+                    <td class="text-muted small">${p.id}</td>
+                    <td class="fw-bold fs-5">${p.product_name}</td>
+                    <td><code class="text-muted">${p.product_code || '---'}</code></td>
+                    <td class="text-primary fw-bold fs-5">$${p.list_price}</td>
+                    <td class="${p.reorder_level < 10 ? 'text-danger fw-bold' : 'fw-bold'}">${p.reorder_level}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-dark fw-bold" onclick="openEditModal(${p.id})">✏️ 編輯</button>
+                            ${showDeleted 
+                                ? `<button class="btn btn-sm btn-outline-primary" onclick="updateStatus(${p.id}, false)">還原</button>` 
+                                : `<button class="btn btn-sm btn-outline-danger" onclick="updateStatus(${p.id}, true)">下架</button>`}
+                        </div>
+                    </td>
+                </tr>`).join('');
+            if(list.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">目前回收桶內沒有商品</td></tr>`;
+        }
+
+        function openEditModal(id) {
+            const p = currentProducts.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('edit_id').value = p.id;
+            document.getElementById('edit_name').value = p.product_name;
+            document.getElementById('edit_price').value = p.list_price;
+            document.getElementById('edit_stock').value = p.reorder_level;
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const { error } = await client.from('products').update({
+                list_price: parseFloat(document.getElementById('edit_price').value),
+                reorder_level: parseInt(document.getElementById('edit_stock').value)
+            }).eq('id', id);
+
+            if (!error) {
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                fetchProducts();
+            } else { alert('修改失敗'); }
+        });
+
+        async function updateStatus(id, status) {
+            const { error } = await client.from('products').update({ is_deleted: status }).eq('id', id);
+            if (!error) fetchProducts();
+        }
+
+        function toggleView() {
+            showDeleted = !showDeleted;
+            document.getElementById('page-title').innerText = showDeleted ? '產品回收桶 🗑️' : '產品庫存管理 📦';
+            fetchProducts();
+        }
+
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await client.from('products').insert([{
+                product_name: document.getElementById('in_name').value,
+                product_code: document.getElementById('in_code').value,
+                list_price: parseFloat(document.getElementById('in_price').value),
+                reorder_level: parseInt(document.getElementById('in_stock').value),
+                is_deleted: false
+            }]);
+            if (!error) location.reload();
+        });
+
+        function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
+        fetchProducts();
+    </script>
+</body>
+</html>

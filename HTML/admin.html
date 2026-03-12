@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>⚙️ 營運指揮中心 - 活力電商後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    
+    <style>
+        /* 🌟 數據方塊樣式優化 (不限制寬度，填滿空間) */
+        .stat-tile {
+            background: #ffffff !important;
+            border-radius: 30px !important;
+            padding: 3rem 1.5rem !important; /* 增加上下間距，讓滿版看起來更大氣 */
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none !important;
+            display: block;
+            height: 100%;
+        }
+
+        .stat-tile:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(233, 85, 19, 0.15) !important;
+        }
+
+        .stat-tile-label {
+            font-size: 1.25rem !important;
+            color: #888 !important;
+            font-weight: 700 !important;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .stat-tile-number {
+            font-size: 4.5rem !important; /* 恢復大數字，視覺張力更強 */
+            font-weight: 900 !important;
+            line-height: 1;
+            margin: 20px 0;
+            display: block;
+        }
+
+        .stat-tile-footer {
+            font-size: 1rem !important;
+            color: #bbb !important;
+            font-weight: 500;
+            display: block;
+        }
+
+        /* 補貨按鈕 */
+        .btn-restock-now {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 15px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .btn-restock-now:hover { background-color: #c0392b; }
+
+        /* 手機版字體微調 */
+        @media (max-width: 768px) {
+            .stat-tile-number {
+                font-size: 3.5rem !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="backend">
+
+    <div class="app-container">
+        <nav class="sidebar">
+            <h2 class="mb-4">🛍️ 系統後台</h2>
+            <div class="mb-4 px-2 py-3 border-bottom border-white border-opacity-25">
+                <small class="text-white-50 d-block mb-1">管理權限已驗證</small>
+                <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
+            </div>
+            
+            <a href="admin.html" class="nav-item active">📊 營運儀表板</a>
+            <a href="customers.html" class="nav-item">👥 客戶管理</a>
+            <a href="products.html" class="nav-item">📦 庫存管理</a>
+            
+            <div style="flex-grow: 1;"></div> 
+
+            <hr class="text-white-50">
+            <a href="#" onclick="handleLogout()" class="nav-item text-danger bg-white bg-opacity-10">🚪 登出系統</a>
+            <a href="../index.html" class="nav-item text-muted small mt-2">⬅️ 返回商店前台</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="card p-5 mb-5 border-0 shadow-sm" style="border-radius: 30px !important;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1 class="page-title mb-2" style="font-weight: 900;">營運指揮中心 🚀</h1>
+                        <p class="text-muted mb-0 fs-5">您好！目前商城的即時數據表現如下：</p>
+                    </div>
+                    <div id="current-date" class="fw-bold fs-5 px-4 py-2 rounded-pill shadow-sm" style="background: var(--theme-bg-light); color: var(--theme-orange-deep);"></div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="stat-tile" onclick="location.href='customers.html'">
+                        <span class="stat-tile-label">👥 總客戶數</span>
+                        <span class="stat-tile-number" id="total-customers" style="color: var(--theme-pink);">--</span>
+                        <span class="stat-tile-footer">點擊進入管理詳細名單</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-tile">
+                        <span class="stat-tile-label">📋 總訂單數</span>
+                        <span class="stat-tile-number" id="total-orders" style="color: var(--theme-orange-deep);">--</span>
+                        <span class="stat-tile-footer">全站所有成功交易總量</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-tile" id="stock-tile-box" onclick="location.href='products.html'">
+                        <span class="stat-tile-label" id="stock-status-label">庫存讀取中...</span>
+                        <span class="stat-tile-number" id="total-out-of-stock">--</span>
+                        <div id="restock-area">
+                            <span class="stat-tile-footer">正在檢查商品庫存狀態</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
+    <script>
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // 設定當前日期
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', { 
+            year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' 
+        });
+
+        // 登入驗證
+        const adminData = localStorage.getItem('admin_user');
+        if (!adminData) window.location.href = 'login.html';
+        else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
+
+        function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
+
+        async function loadStats() {
+            try {
+                const [cRes, oRes, pOutRes] = await Promise.all([
+                    client.from('customers').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
+                    client.from('orders').select('*', { count: 'exact', head: true }),
+                    client.from('products').select('*', { count: 'exact', head: true }).eq('is_deleted', false).lte('reorder_level', 0)
+                ]);
+
+                document.getElementById('total-customers').innerText = cRes.count || 0;
+                document.getElementById('total-orders').innerText = oRes.count || 0;
+                
+                const count = pOutRes.count || 0;
+                const outOfStockNum = document.getElementById('total-out-of-stock');
+                const labelEl = document.getElementById('stock-status-label');
+                const areaEl = document.getElementById('restock-area');
+                const boxEl = document.getElementById('stock-tile-box');
+
+                outOfStockNum.innerText = count;
+
+                if (count === 0) {
+                    labelEl.innerText = "庫存狀態良好";
+                    outOfStockNum.style.color = "#2ecc71";
+                    labelEl.style.color = "#2ecc71";
+                    areaEl.innerHTML = '<span class="badge bg-success py-2 px-3 rounded-pill">✅ 庫存充足</span>';
+                    boxEl.style.background = "#FFFFFF";
+                } else {
+                    labelEl.innerText = `目前有 ${count} 產品缺貨`;
+                    outOfStockNum.style.color = "#e74c3c";
+                    labelEl.style.color = "#e74c3c";
+                    areaEl.innerHTML = '<button class="btn-restock-now shadow-sm">🚀 立即補貨</button>';
+                    boxEl.style.background = "#FFF5F5";
+                }
+            } catch (err) { console.error('Error loading data:', err); }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>🛒 購物車 - 活力購物網</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        :root {
+            --yanni-orange: #E95513;
+            --yanni-bg: #FDF5F2;
+            --text-dark: #333333;
+        }
+
+        body {
+            background-color: var(--yanni-bg);
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            color: var(--text-dark);
+        }
+
+        .top-nav {
+            background: #ffffff;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            color: var(--yanni-orange) !important;
+            font-weight: 800;
+        }
+
+        .cart-header { padding: 40px 0; }
+        .cart-header h1 { font-weight: 800; }
+
+        .card {
+            border: none;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .table thead th {
+            border-bottom: 2px solid var(--yanni-bg);
+            color: #888;
+            font-weight: 600;
+            padding: 1.5rem 1rem;
+        }
+
+        .btn-yanni {
+            background-color: var(--yanni-orange);
+            color: white;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: 0.3s;
+            border: none;
+        }
+        .btn-yanni:hover {
+            background-color: #c9440f;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-quantity {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-quantity:hover {
+            border-color: var(--yanni-orange);
+            color: var(--yanni-orange);
+        }
+
+        .price-text {
+            color: var(--yanni-orange);
+            font-weight: 800;
+        }
+
+        .summary-card {
+            background: #ffffff;
+            border: 2px solid var(--yanni-orange);
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav d-flex justify-content-between align-items-center">
+        <a href="../index.html" class="text-decoration-none navbar-brand fs-3">🛍️ 活力購物網</a>
+        <div class="d-flex gap-4 align-items-center">
+            <a href="../index.html" class="text-decoration-none text-dark fw-bold">首頁</a>
+            <span class="fw-bold" style="color: var(--yanni-orange);">🛒 購物車</span>
+            <a href="checkout.html" class="text-decoration-none text-dark fw-bold">結帳中心</a>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="cart-header d-flex justify-content-between align-items-end">
+            <div>
+                <h1 class="display-5">您的購物車</h1>
+                <p class="text-muted mb-0">確認好商品，準備迎接美好生活！</p>
+            </div>
+            <button onclick="clearCart()" class="btn btn-link text-muted text-decoration-none small">
+                🗑️ 清空購物車
+            </button>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm p-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>商品</th>
+                                    <th>單價</th>
+                                    <th>數量</th>
+                                    <th>小計</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card summary-card shadow-sm p-4">
+                    <h4 class="fw-bold mb-4">🧾 訂單摘要</h4>
+                    <div class="d-flex justify-content-between mb-3 fs-5">
+                        <span class="text-muted">商品總數</span>
+                        <strong id="total-items">0 件</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="text-muted">運費</span>
+                        <span class="text-success fw-bold">免運費</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4 mt-2">
+                        <span class="fs-5 fw-bold">應付總額</span>
+                        <span id="total-price" class="fs-3 price-text">$0.00</span>
+                    </div>
+                    <a href="checkout.html" class="btn btn-yanni w-100 py-3 fs-5">
+                        💳 前往結帳
+                    </a>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="../index.html" class="text-muted text-decoration-none">← 繼續購物</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+        function loadCart() {
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            const tbody = document.getElementById('cart-body');
+            const totalItemsEl = document.getElementById('total-items');
+            const totalPriceEl = document.getElementById('total-price');
+
+            tbody.innerHTML = "";
+            let totalItems = 0;
+            let totalPrice = 0;
+
+            if (cart.length === 0) {
+                // 修正 5：這裡的按鈕路徑也要改
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">購物車是空的喔！<br><a href="../index.html" class="btn btn-yanni mt-3">去逛逛吧</a></td></tr>`;
+                totalItemsEl.innerText = "0 件";
+                totalPriceEl.innerText = "$0.00";
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                totalItems += item.quantity;
+                totalPrice += subtotal;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-4">
+                            <div class="fw-bold fs-5">${item.name}</div>
+                        </td>
+                        <td class="text-muted">${formatter.format(item.price)}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <button onclick="changeQuantity(${index}, -1)" class="btn-quantity">-</button>
+                                <span class="fw-bold">${item.quantity}</span>
+                                <button onclick="changeQuantity(${index}, 1)" class="btn-quantity">+</button>
+                            </div>
+                        </td>
+                        <td class="price-text fs-5">${formatter.format(subtotal)}</td>
+                        <td>
+                            <button onclick="removeItem(${index})" class="btn btn-sm btn-link text-danger text-decoration-none">移除</button>
+                        </td>
+                    </tr>`;
+            });
+
+            totalItemsEl.innerText = `${totalItems} 件`;
+            totalPriceEl.innerText = formatter.format(totalPrice);
+        }
+
+        function changeQuantity(index, change) {
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) cart.splice(index, 1);
+            localStorage.setItem('northwind_cart', JSON.stringify(cart));
+            loadCart(); 
+        }
+
+        function removeItem(index) {
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            cart.splice(index, 1);
+            localStorage.setItem('northwind_cart', JSON.stringify(cart));
+            loadCart();
+        }
+
+        function clearCart() {
+            if (!confirm('確定要清空購物車嗎？')) return;
+            localStorage.removeItem('northwind_cart');
+            loadCart();
+        }
+
+        loadCart();
+    </script>
+</body>
+</html>

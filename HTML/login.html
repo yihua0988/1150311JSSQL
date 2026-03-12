@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理員登入 - 活力電商後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        /* 針對登入頁面的居中佈局微調 */
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 450px;
+            padding: 3rem !important;
+        }
+        .login-logo {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body class="backend">
+
+    <div class="login-wrapper">
+        <div class="card login-card shadow-lg">
+            <div class="login-logo">🛍️</div>
+            <h2 class="text-center mb-4 fw-bold" style="color: var(--theme-orange-deep);">管理員登入</h2>
+            
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="form-label fw-bold">帳號 (Username)</label>
+                    <input type="text" id="username" class="form-control" placeholder="請輸入帳號" required>
+                </div>
+                <div class="mb-5">
+                    <label class="form-label fw-bold">密碼 (Password)</label>
+                    <input type="password" id="password" class="form-control" placeholder="請輸入密碼" required>
+                </div>
+                
+                <button type="submit" class="btn btn-success w-100 py-3 mb-3">
+                    🚀 安全登入
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="../index.html" class="text-muted text-decoration-none">← 返回商店首頁</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
+    <script>
+        // 0. 初始化 Supabase
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 1. 【自動跳轉守衛】
+        // 如果已經通過驗證，直接跳轉到 admin.html，不給他看登入頁
+        window.onload = function() {
+            const existingUser = localStorage.getItem('admin_user');
+            if (existingUser && existingUser !== "undefined") {
+                window.location.href = 'admin.html';
+            }
+        };
+
+        // 2. 登入處理邏輯
+        const loginForm = document.getElementById('login-form');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userVal = document.getElementById('username').value;
+            const passVal = document.getElementById('password').value;
+
+            try {
+                // 向 Supabase 的 admins 表查詢
+                const { data, error } = await client
+                    .from('admins')
+                    .select('admin_id, username, role, employee_id')
+                    .eq('username', userVal)
+                    .eq('password', passVal)
+                    .single();
+
+                if (error || !data) {
+                    alert('❌ 帳號或密碼錯誤，請重新嘗試。');
+                    return;
+                }
+
+                // 成功登入：存入通行證 (localStorage)
+                localStorage.setItem('admin_user', JSON.stringify({
+                    id: data.admin_id,
+                    username: data.username,
+                    role: data.role,
+                    empId: data.employee_id
+                }));
+
+                // 彈出成功訊息並跳轉
+                alert(`歡迎回來，${data.username}！正在進入系統...`);
+                window.location.href = 'admin.html';
+
+            } catch (err) {
+                console.error('Login Error:', err.message);
+                alert('系統連線異常，請檢查網路或 Supabase 設定。');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>所有商品 - 活力購物網</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        /* 🌟 放大版導覽列樣式 */
+        .top-nav {
+            padding: 1.5rem 3rem !important;
+            background: #ffffff;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .top-nav h2 { font-size: 2.2rem !important; }
+        .nav-link-custom {
+            font-size: 1.25rem !important;
+            transition: all 0.2s;
+        }
+        .nav-link-custom:hover { transform: scale(1.1); color: var(--theme-orange-deep) !important; }
+
+        /* 🛒 購物車數字標籤 (Badge) */
+        .cart-badge {
+            background-color: var(--theme-orange-deep);
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+            padding: 2px 9px;
+            border-radius: 50px;
+            margin-left: 5px;
+            display: inline-block;
+            box-shadow: 0 4px 8px rgba(233, 85, 19, 0.3);
+        }
+
+        /* 商品卡片樣式 */
+        .product-item {
+            transition: all 0.3s ease;
+            border: 1px solid #eee !important;
+            border-radius: 25px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .product-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(233, 85, 19, 0.15) !important;
+            border-color: var(--theme-orange-deep) !important;
+        }
+        .img-placeholder {
+            height: 200px;
+            background-color: #fdf5f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+
+        /* 數量調整器 */
+        .qty-input-group {
+            max-width: 120px;
+            border: 2px solid #eee;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+        }
+        .btn-qty {
+            background: none;
+            border: none;
+            width: 35px;
+            height: 35px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .qty-val {
+            width: 40px;
+            text-align: center;
+            border: none;
+            font-weight: bold;
+            background: transparent;
+        }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
+</head>
+
+<body class="frontend">
+
+    <nav class="top-nav d-flex justify-content-between align-items-center sticky-top">
+        <a href="../index.html" class="text-decoration-none">
+            <h2 class="mb-0 fw-bold" style="color: var(--theme-orange-deep);">🛍️ 活力購物網</h2>
+        </a>
+        <div class="d-flex gap-5 align-items-center">
+            <a href="../index.html" class="nav-link-custom text-decoration-none text-dark fw-bold">首頁</a>
+            <span class="nav-link-custom fw-bold" style="color: var(--theme-orange-deep);">所有商品</span>
+            
+            <a href="cart.html" class="nav-link-custom text-decoration-none text-dark fw-bold">
+                🛒 購物車 <span id="cart-count-badge" class="cart-badge">0</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <header class="mb-5 text-center">
+            <h1 class="display-4 fw-bold">全系列活力好物 🌿</h1>
+            <p class="text-muted fs-4">探索最適合您的健康營養方案</p>
+            <hr class="w-25 mx-auto opacity-10">
+        </header>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="all-products-grid">
+            </div>
+    </div>
+
+    <footer class="py-5 mt-5 border-top bg-white">
+        <div class="container text-center text-muted">
+            <p class="fs-5">© 2026 活力購物網 - 您的健康，我們在乎</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
+    <script>
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 🌟 1. 更新導覽列購物車數量的函數
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            // 加總所有項目的數量 (Quantity)
+            const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const badge = document.getElementById('cart-count-badge');
+            
+            if (badge) {
+                badge.innerText = totalQuantity;
+                // 如果是 0 就隱藏，大於 0 就顯示
+                badge.style.display = (totalQuantity === 0) ? 'none' : 'inline-block';
+            }
+        }
+
+        // 2. 載入產品列表
+        async function loadAllProducts() {
+            try {
+                const { data, error } = await client
+                    .from('products')
+                    .select('id, product_name, product_code, list_price')
+                    .eq('is_deleted', false)
+                    .order('id', { ascending: true });
+
+                if (error) throw error;
+
+                const grid = document.getElementById('all-products-grid');
+                grid.innerHTML = "";
+
+                data.forEach(p => {
+                    grid.innerHTML += `
+                        <div class="col">
+                            <div class="card h-100 product-item shadow-sm p-3">
+                                <div class="img-placeholder">💊</div>
+                                <div class="card-body d-flex flex-column p-0 mt-3">
+                                    <small class="text-muted mb-1">${p.product_code || '精選系列'}</small>
+                                    <h4 class="card-title fw-bold mb-2">${p.product_name}</h4>
+                                    <div class="fs-3 fw-bold mb-3" style="color: var(--theme-orange-deep);">$${p.list_price}</div>
+                                    
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted small fw-bold">數量</span>
+                                            <div class="qty-input-group">
+                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, -1)">-</button>
+                                                <input type="number" id="qty-${p.id}" class="qty-val" value="1" min="1" readonly>
+                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, 1)">+</button>
+                                            </div>
+                                        </div>
+
+                                        <button class="btn btn-yanni w-100 py-2 fs-5 shadow-sm" 
+                                            onclick="addToCart(${p.id}, '${p.product_name}', ${p.list_price})">
+                                            🛒 加入購物車
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 3. UI 數量調整
+        function changeQtyUI(id, delta) {
+            const input = document.getElementById(`qty-${id}`);
+            let val = parseInt(input.value) + delta;
+            if (val < 1) val = 1;
+            input.value = val;
+        }
+
+        // 4. 加入購物車邏輯
+        function addToCart(id, name, price) {
+            const qtyInput = document.getElementById(`qty-${id}`);
+            const quantityToAdd = parseInt(qtyInput.value);
+
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            const found = cart.find(item => item.id === id);
+            
+            if (found) {
+                found.quantity += quantityToAdd;
+            } else {
+                cart.push({ id, name, price, quantity: quantityToAdd });
+            }
+            
+            localStorage.setItem('northwind_cart', JSON.stringify(cart));
+            
+            // 🌟 加入成功後立刻呼叫更新函數
+            updateCartBadge();
+            
+            alert(`✅ 已將 ${quantityToAdd} 件「${name}」放入購物車！`);
+            qtyInput.value = 1; // 重設為 1
+        }
+
+        // 初始化執行
+        loadAllProducts();
+        updateCartBadge(); // 🌟 頁面載入時先執行一次，顯示現有數量
+    </script>
+</body>
+</html>
