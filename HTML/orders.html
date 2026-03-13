@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>📋 訂單管理 - 活力電商後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        .table-card {
+            border-radius: 30px !important;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #666;
+            padding: 1.2rem 1rem;
+            white-space: nowrap;
+        }
+        /* 狀態標籤美化 */
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+        }
+        .status-pending { background-color: #ffeaa7; color: #d35400; }
+        .status-shipped { background-color: #74b9ff; color: #0984e3; }
+        .status-completed { background-color: #55efc4; color: #00b894; }
+        .status-cancelled { background-color: #ff7675; color: #d63031; }
+    </style>
+</head>
+
+<body class="backend">
+    <div class="app-container">
+        <nav class="sidebar">
+            <h2 class="mb-4">🛍️ 系統後台</h2>
+            <div class="mb-4 px-2 py-3 border-bottom border-white border-opacity-25">
+                <small class="text-white-50 d-block mb-1">管理權限已驗證</small>
+                <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
+            </div>
+            <a href="admin.html" class="nav-item">📊 營運儀表板</a>
+            <a href="orders.html" class="nav-item active">📋 訂單管理</a> <a href="customers.html" class="nav-item">👥 客戶管理</a>
+            <a href="products.html" class="nav-item">📦 庫存管理</a>
+            <div style="flex-grow: 1;"></div> 
+            <hr class="text-white-50">
+            <a href="#" onclick="handleLogout()" class="nav-item text-danger bg-white bg-opacity-10">🚪 登出系統</a>
+            <a href="../index.html" class="nav-item text-muted small mt-2">⬅️ 返回商店前台</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
+                <h1 class="page-title mb-0">訂單管理系統 📋</h1>
+                <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="fetchOrders()">🔄 重新整理</button>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 table-card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>訂單編號</th>
+                                <th>建立時間</th>
+                                <th>客戶資訊</th>
+                                <th>付款方式</th>
+                                <th>總金額</th>
+                                <th>目前狀態</th>
+                                <th>操作管理</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order-list">
+                            <tr><td colspan="7" class="text-center py-5">訂單載入中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius: 25px; border: none;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-4">🧾 訂單明細 <span id="modal-order-id" class="text-muted fs-6"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="bg-light p-3 rounded-4 mb-4">
+                        <h6 class="fw-bold mb-3 text-secondary">📦 寄送資訊</h6>
+                        <div class="row">
+                            <div class="col-sm-6"><p class="mb-1"><strong>收件人：</strong> <span id="modal-cust-name"></span></p></div>
+                            <div class="col-sm-6"><p class="mb-1"><strong>電話：</strong> <span id="modal-cust-phone"></span></p></div>
+                            <div class="col-12"><p class="mb-0"><strong>地址：</strong> <span id="modal-cust-address"></span></p></div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-3 text-secondary">🛍️ 購買商品</h6>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>商品名稱</th>
+                                    <th>單價</th>
+                                    <th>數量</th>
+                                    <th class="text-end">小計</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-items-list">
+                                </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <h4 class="fw-bold">總計金額：<span id="modal-total-amount" style="color: var(--theme-orange-deep);"></span></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="statusModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="border-radius: 20px;">
+                <div class="modal-body p-4 text-center">
+                    <h5 class="fw-bold mb-4">更新訂單狀態</h5>
+                    <input type="hidden" id="status_order_id">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning fw-bold" onclick="updateStatus('待處理')">🟡 待處理</button>
+                        <button class="btn btn-primary fw-bold" onclick="updateStatus('已出貨')">🚚 已出貨</button>
+                        <button class="btn btn-success fw-bold" onclick="updateStatus('已完成')">✅ 已完成</button>
+                        <button class="btn btn-danger fw-bold" onclick="updateStatus('已取消')">❌ 已取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
+    <script>
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        let allOrders = [];
+
+        // 登入驗證
+        const adminData = localStorage.getItem('admin_user');
+        if (!adminData) window.location.href = 'login.html';
+        else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
+
+        // 1. 載入主訂單資料 (使用強大的 Join 語法把客戶資料一起抓出來)
+        async function fetchOrders() {
+            try {
+                const { data, error } = await client
+                    .from('orders')
+                    .select(`
+                        id, 
+                        order_date, 
+                        total_amount, 
+                        payment_method, 
+                        status,
+                        customers ( first_name, business_phone, address )
+                    `)
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+                allOrders = data;
+                renderOrders(data);
+            } catch (err) {
+                console.error("載入訂單失敗:", err);
+                document.getElementById('order-list').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-5">讀取失敗：${err.message}</td></tr>`;
+            }
+        }
+
+        // 2. 渲染訂單表格
+        function renderOrders(list) {
+            const tbody = document.getElementById('order-list');
+            if(list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">目前沒有任何訂單</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(order => {
+                // 格式化日期
+                const dateObj = new Date(order.order_date);
+                const dateStr = dateObj.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+                
+                // 客戶防呆 (避免客戶被刪除後找不到)
+                const custName = order.customers ? order.customers.first_name : '未知客戶';
+                const custPhone = order.customers ? order.customers.business_phone : '無電話';
+
+                // 狀態標籤樣式對應
+                let statusClass = 'status-pending';
+                if(order.status === '已出貨') statusClass = 'status-shipped';
+                if(order.status === '已完成') statusClass = 'status-completed';
+                if(order.status === '已取消') statusClass = 'status-cancelled';
+
+                // 付款方式美化
+                let payText = order.payment_method === 'cod' ? '🚚 貨到付款' : 
+                              order.payment_method === 'credit' ? '💳 信用卡' : '🏦 銀行轉帳';
+
+                return `
+                <tr>
+                    <td class="fw-bold">#${order.id}</td>
+                    <td class="text-muted small">${dateStr}</td>
+                    <td>
+                        <div class="fw-bold" style="color: var(--theme-orange-deep);">${custName}</div>
+                        <div class="text-muted small">${custPhone}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">${payText}</span></td>
+                    <td class="fw-bold fs-5">${formatter.format(order.total_amount)}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-dark fw-bold" onclick="viewOrderDetails(${order.id})">🔍 明細</button>
+                            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="openStatusModal(${order.id})">⚙️ 狀態</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 3. 查看訂單明細 (呼叫 order_details 表並 Join products 表)
+        async function viewOrderDetails(orderId) {
+            // 先找出這筆訂單的主資料填入 Modal 標頭
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('modal-order-id').innerText = `(訂單編號: #${order.id})`;
+            document.getElementById('modal-cust-name').innerText = order.customers ? order.customers.first_name : '未知';
+            document.getElementById('modal-cust-phone').innerText = order.customers ? order.customers.business_phone : '未知';
+            document.getElementById('modal-cust-address').innerText = order.customers ? order.customers.address : '未知';
+            document.getElementById('modal-total-amount').innerText = formatter.format(order.total_amount);
+
+            // 準備載入明細
+            const tbody = document.getElementById('modal-items-list');
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">明細載入中...</td></tr>`;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+
+            try {
+                // 🌟 神奇的 Join：抓取訂單明細，同時把商品名稱也抓出來！
+                const { data, error } = await client
+                    .from('order_details')
+                    .select(`
+                        quantity, 
+                        unit_price,
+                        products ( product_name )
+                    `)
+                    .eq('order_id', orderId);
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">找不到商品明細</td></tr>`;
+                    return;
+                }
+
+                // 渲染明細列表
+                tbody.innerHTML = data.map(item => {
+                    const prodName = item.products ? item.products.product_name : '未知商品 (可能已下架)';
+                    const subtotal = item.unit_price * item.quantity;
+                    return `
+                        <tr>
+                            <td class="fw-bold">${prodName}</td>
+                            <td>${formatter.format(item.unit_price)}</td>
+                            <td>x ${item.quantity}</td>
+                            <td class="text-end fw-bold">${formatter.format(subtotal)}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 加上運費列
+                tbody.innerHTML += `
+                    <tr class="table-light text-muted">
+                        <td colspan="3" class="text-end">物流運費</td>
+                        <td class="text-end fw-bold">$60.00</td>
+                    </tr>
+                `;
+
+            } catch (err) {
+                console.error("載入明細失敗:", err);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>`;
+            }
+        }
+
+        // 4. 開啟狀態變更選單
+        function openStatusModal(orderId) {
+            document.getElementById('status_order_id').value = orderId;
+            new bootstrap.Modal(document.getElementById('statusModal')).show();
+        }
+
+        // 5. 送出狀態更新至資料庫
+        async function updateStatus(newStatus) {
+            const orderId = document.getElementById('status_order_id').value;
+            try {
+                const { error } = await client
+                    .from('orders')
+                    .update({ status: newStatus })
+                    .eq('id', orderId);
+                    
+                if (error) throw error;
+                
+                // 隱藏 Modal 並重新載入資料
+                bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+                fetchOrders();
+            } catch (err) {
+                alert("更新狀態失敗：" + err.message);
+            }
+        }
+
+        function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
+        
+        // 畫面載入時自動抓取資料
+        fetchOrders();
+    </script>
+</body>
+</html>

@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     <style>
-        /* 🌟 RWD 手機版導覽列與佈局修正 */
         @media (max-width: 768px) {
             .app-container { flex-direction: column; }
             .sidebar {
@@ -32,30 +31,24 @@
             .page-title { font-size: 1.8rem !important; }
         }
 
-        /* 表格微調 */
-        .product-table-card {
-            border-radius: 30px !important;
-            overflow: hidden;
-        }
-        .table thead th {
-            background-color: #f8f9fa;
-            font-weight: 700;
-            color: #666;
-            padding: 1.2rem 1rem;
-        }
+        .product-table-card { border-radius: 30px !important; overflow: hidden; }
+        .table thead th { background-color: #f8f9fa; font-weight: 700; color: #666; padding: 1.2rem 1rem; }
+        .img-thumbnail-custom { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .preview-box { width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 2px dashed #ddd; }
     </style>
 </head>
 
 <body class="backend">
     <div class="app-container">
         <nav class="sidebar">
-            <h2>🛍️ 系統後台</h2>
+            <h2 class="mb-4">🛍️ 系統後台</h2>
             <div class="mb-4 px-2 py-3 border-bottom border-white border-opacity-25">
                 <small class="text-white-50 d-block mb-1">管理權限已驗證</small>
                 <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
             </div>
             
             <a href="admin.html" class="nav-item">📊 營運儀表板</a>
+            <a href="orders.html" class="nav-item">📋 訂單管理</a>
             <a href="customers.html" class="nav-item">👥 客戶管理</a>
             <a href="products.html" class="nav-item active">📦 庫存管理</a>
             
@@ -79,7 +72,7 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                <th>圖片</th>
                                 <th>產品名稱</th>
                                 <th>產品編號</th>
                                 <th>定價 (USD)</th>
@@ -102,11 +95,15 @@
                 <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">📦 新增產品資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
                     <form id="addForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">上傳商品圖片</label>
+                            <input type="file" id="in_image" class="form-control" accept="image/*">
+                        </div>
                         <div class="mb-3"><label class="form-label">產品名稱</label><input type="text" id="in_name" class="form-control" required></div>
                         <div class="mb-3"><label class="form-label">產品編號</label><input type="text" id="in_code" class="form-control" required></div>
                         <div class="mb-3"><label class="form-label">定價</label><input type="number" id="in_price" class="form-control" step="0.01" required></div>
-                        <div class="mb-3"><label class="form-label">庫存量</label><input type="number" id="in_stock" class="form-control" required></div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">確認上架</button>
+                        <div class="mb-3"><label class="form-label">初始庫存量</label><input type="number" id="in_stock" class="form-control" required></div>
+                        <button type="submit" id="add-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">確認上架</button>
                     </form>
                 </div>
             </div>
@@ -120,10 +117,17 @@
                 <div class="modal-body p-4">
                     <form id="editForm">
                         <input type="hidden" id="edit_id">
+                        
+                        <div class="mb-4 text-center">
+                            <img id="edit_img_preview" src="" alt="圖片預覽" class="preview-box mb-3 bg-light shadow-sm">
+                            <input type="file" id="edit_image" class="form-control" accept="image/*">
+                            <small class="text-muted mt-1 d-block">💡 若不更換圖片，請留空即可</small>
+                        </div>
+
                         <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="edit_name" class="form-control bg-light" readonly></div>
                         <div class="mb-3"><label class="form-label fw-bold text-primary">調整定價 (USD)</label><input type="number" id="edit_price" class="form-control form-control-lg border-primary" step="0.01" required></div>
                         <div class="mb-3"><label class="form-label fw-bold text-success">調整庫存量</label><input type="number" id="edit_stock" class="form-control form-control-lg border-success" required></div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">✅ 儲存修改</button>
+                        <button type="submit" id="edit-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">✅ 儲存修改</button>
                     </form>
                 </div>
             </div>
@@ -145,7 +149,7 @@
 
         async function fetchProducts() {
             try {
-                const { data, error } = await client.from('products').select('*').eq('is_deleted', showDeleted).order('id', { ascending: true });
+                const { data, error } = await client.from('products').select('*').eq('is_deleted', showDeleted).order('id', { ascending: false });
                 if (error) throw error;
                 currentProducts = data;
                 render(data);
@@ -156,13 +160,20 @@
 
         function render(list) {
             const tbody = document.getElementById('product-list');
-            tbody.innerHTML = list.map(p => `
+            tbody.innerHTML = list.map(p => {
+                const imgTag = p.image_url 
+                    ? `<img src="${p.image_url}" class="img-thumbnail-custom">` 
+                    : `<div class="img-thumbnail-custom d-flex align-items-center justify-content-center bg-light text-muted" style="font-size: 0.8rem;">無圖片</div>`;
+
+                return `
                 <tr>
-                    <td class="text-muted small">${p.id}</td>
+                    <td>${imgTag}</td>
                     <td class="fw-bold fs-5">${p.product_name}</td>
                     <td><code class="text-muted">${p.product_code || '---'}</code></td>
                     <td class="text-primary fw-bold fs-5">$${p.list_price}</td>
-                    <td class="${p.reorder_level < 10 ? 'text-danger fw-bold' : 'fw-bold'}">${p.reorder_level}</td>
+                    <td class="${p.reorder_level <= 0 ? 'text-danger fw-bold' : 'fw-bold'}">
+                        ${p.reorder_level} ${p.reorder_level <= 0 ? '<span class="badge bg-danger ms-1">缺貨</span>' : ''}
+                    </td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-outline-dark fw-bold" onclick="openEditModal(${p.id})">✏️ 編輯</button>
@@ -171,10 +182,12 @@
                                 : `<button class="btn btn-sm btn-outline-danger" onclick="updateStatus(${p.id}, true)">下架</button>`}
                         </div>
                     </td>
-                </tr>`).join('');
-            if(list.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">目前回收桶內沒有商品</td></tr>`;
+                </tr>`;
+            }).join('');
+            if(list.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">目前沒有商品</td></tr>`;
         }
 
+        // 🌟 打開編輯視窗，並載入原有圖片預覽
         function openEditModal(id) {
             const p = currentProducts.find(item => item.id === id);
             if (!p) return;
@@ -182,23 +195,82 @@
             document.getElementById('edit_name').value = p.product_name;
             document.getElementById('edit_price').value = p.list_price;
             document.getElementById('edit_stock').value = p.reorder_level;
+            
+            // 處理圖片預覽 (有圖顯示圖，沒圖給一個透明佔位符或預設圖案)
+            const previewImg = document.getElementById('edit_img_preview');
+            previewImg.src = p.image_url ? p.image_url : 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E7%84%A1%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E';
+            
+            // 清空檔案選擇器，避免上次選的檔案殘留
+            document.getElementById('edit_image').value = ''; 
+            
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
 
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('edit_id').value;
-            const { error } = await client.from('products').update({
-                list_price: parseFloat(document.getElementById('edit_price').value),
-                reorder_level: parseInt(document.getElementById('edit_stock').value)
-            }).eq('id', id);
-
-            if (!error) {
-                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-                fetchProducts();
-            } else { alert('修改失敗'); }
+        // 🌟 當使用者選擇新圖片時，立刻更新預覽框
+        document.getElementById('edit_image').addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { document.getElementById('edit_img_preview').src = e.target.result; }
+                reader.readAsDataURL(file);
+            }
         });
 
+        // 🌟 儲存編輯 (包含圖片上傳邏輯)
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('edit-submit-btn');
+            btn.disabled = true;
+            btn.innerText = "⏳ 儲存中...";
+
+            try {
+                const id = document.getElementById('edit_id').value;
+                const fileInput = document.getElementById('edit_image');
+                const file = fileInput.files[0];
+                
+                // 找出該商品，保留它原本的圖片網址
+                const currentProduct = currentProducts.find(item => item.id == id);
+                let finalImageUrl = currentProduct.image_url;
+
+                // 如果有上傳新圖片，才執行 Supabase 儲存桶上傳
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+
+                    const { error: uploadErr } = await client.storage
+                        .from('product-images')
+                        .upload(`public/${fileName}`, file);
+
+                    if (uploadErr) throw uploadErr;
+
+                    const { data: urlData } = client.storage
+                        .from('product-images')
+                        .getPublicUrl(`public/${fileName}`);
+                        
+                    finalImageUrl = urlData.publicUrl;
+                }
+
+                // 更新資料庫 (包含價格、庫存與可能變動的圖片網址)
+                const { error } = await client.from('products').update({
+                    list_price: parseFloat(document.getElementById('edit_price').value),
+                    reorder_level: parseInt(document.getElementById('edit_stock').value),
+                    image_url: finalImageUrl
+                }).eq('id', id);
+
+                if (error) throw error;
+
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                fetchProducts();
+            } catch (err) {
+                alert('修改失敗：' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "✅ 儲存修改";
+            }
+        });
+
+        // 下架/還原
         async function updateStatus(id, status) {
             const { error } = await client.from('products').update({ is_deleted: status }).eq('id', id);
             if (!error) fetchProducts();
@@ -210,16 +282,47 @@
             fetchProducts();
         }
 
+        // 新增商品
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const { error } = await client.from('products').insert([{
-                product_name: document.getElementById('in_name').value,
-                product_code: document.getElementById('in_code').value,
-                list_price: parseFloat(document.getElementById('in_price').value),
-                reorder_level: parseInt(document.getElementById('in_stock').value),
-                is_deleted: false
-            }]);
-            if (!error) location.reload();
+            const btn = document.getElementById('add-submit-btn');
+            btn.disabled = true;
+            btn.innerText = "⏳ 處理中...";
+
+            try {
+                let finalImageUrl = null;
+                const fileInput = document.getElementById('in_image');
+                const file = fileInput.files[0];
+
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    const { error: uploadErr } = await client.storage.from('product-images').upload(`public/${fileName}`, file);
+                    if (uploadErr) throw uploadErr;
+                    const { data: urlData } = client.storage.from('product-images').getPublicUrl(`public/${fileName}`);
+                    finalImageUrl = urlData.publicUrl;
+                }
+
+                const { error: insertErr } = await client.from('products').insert([{
+                    product_name: document.getElementById('in_name').value,
+                    product_code: document.getElementById('in_code').value,
+                    list_price: parseFloat(document.getElementById('in_price').value),
+                    reorder_level: parseInt(document.getElementById('in_stock').value),
+                    image_url: finalImageUrl,
+                    is_deleted: false
+                }]);
+
+                if (insertErr) throw insertErr;
+
+                bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+                document.getElementById('addForm').reset();
+                fetchProducts();
+            } catch (err) {
+                alert('新增失敗：' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "確認上架";
+            }
         });
 
         function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }

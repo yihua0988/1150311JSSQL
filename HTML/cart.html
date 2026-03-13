@@ -141,7 +141,7 @@
                     </div>
                     <div class="d-flex justify-content-between mb-4">
                         <span class="text-muted">運費</span>
-                        <span class="text-success fw-bold">免運費</span>
+                        <span id="shipping-fee" class="text-success fw-bold">$0.00</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between mb-4 mt-2">
@@ -161,21 +161,25 @@
 
     <script>
         const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        
+        // 設定固定運費金額
+        const shippingFee = 60; 
 
         function loadCart() {
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             const tbody = document.getElementById('cart-body');
             const totalItemsEl = document.getElementById('total-items');
             const totalPriceEl = document.getElementById('total-price');
+            const shippingFeeEl = document.getElementById('shipping-fee');
 
             tbody.innerHTML = "";
             let totalItems = 0;
-            let totalPrice = 0;
+            let productTotal = 0;
 
             if (cart.length === 0) {
-                // 修正 5：這裡的按鈕路徑也要改
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">購物車是空的喔！<br><a href="../index.html" class="btn btn-yanni mt-3">去逛逛吧</a></td></tr>`;
                 totalItemsEl.innerText = "0 件";
+                shippingFeeEl.innerText = "$0.00"; // 購物車為空時，運費為 0
                 totalPriceEl.innerText = "$0.00";
                 return;
             }
@@ -183,7 +187,7 @@
             cart.forEach((item, index) => {
                 const subtotal = item.price * item.quantity;
                 totalItems += item.quantity;
-                totalPrice += subtotal;
+                productTotal += subtotal;
 
                 tbody.innerHTML += `
                     <tr>
@@ -206,7 +210,10 @@
             });
 
             totalItemsEl.innerText = `${totalItems} 件`;
-            totalPriceEl.innerText = formatter.format(totalPrice);
+            
+            // 購物車有商品時，顯示運費並計算總額（商品總額 + 運費）
+            shippingFeeEl.innerText = formatter.format(shippingFee);
+            totalPriceEl.innerText = formatter.format(productTotal + shippingFee);
         }
 
         function changeQuantity(index, change) {

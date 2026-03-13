@@ -6,52 +6,65 @@
     <title>👥 客戶名單管理 - 活力電商後台</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
+    <style>
+        .table-card {
+            border-radius: 30px !important;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #666;
+            padding: 1.2rem 1rem;
+        }
+    </style>
 </head>
 
 <body class="backend">
     <div class="app-container">
         <nav class="sidebar">
-            <h2>🛍️ 系統後台</h2>
+            <h2 class="mb-4">🛍️ 系統後台</h2>
             <div class="mb-4 px-2 py-3 border-bottom border-white border-opacity-25">
-                <small class="text-white-50 d-block mb-1">當前管理員</small>
-                <span id="admin-display-name" class="text-white fw-bold fs-4">驗證中...</span>
+                <small class="text-white-50 d-block mb-1">管理權限已驗證</small>
+                <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
             </div>
             <a href="admin.html" class="nav-item">📊 營運儀表板</a>
+            <a href="orders.html" class="nav-item">📋 訂單管理</a>
             <a href="customers.html" class="nav-item active">👥 客戶管理</a>
             <a href="products.html" class="nav-item">📦 庫存管理</a>
             <div style="flex-grow: 1;"></div> 
             <hr class="text-white-50">
             <a href="#" onclick="handleLogout()" class="nav-item text-danger bg-white bg-opacity-10">🚪 登出系統</a>
+            <a href="../index.html" class="nav-item text-muted small mt-2">⬅️ 返回商店前台</a>
         </nav>
 
         <main class="main-content">
-            <div class="d-flex justify-content-between align-items-center mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
                 <h1 class="page-title mb-0" id="page-title">客戶名單管理 👥</h1>
                 <div class="d-flex gap-3">
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">＋ 新增客戶</button>
-                    <button class="btn btn-outline-dark fw-bold bg-white" onclick="toggleView()">🗑️ 客戶回收桶</button>
+                    <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">＋ 新增客戶</button>
+                    <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="toggleView()">🗑️ 客戶回收桶</button>
                 </div>
             </div>
 
             <div class="mb-4">
-                <input type="text" id="searchInput" class="form-control" placeholder="🔍 搜尋公司、聯絡人或電話..." style="max-width: 400px;">
+                <input type="text" id="searchInput" class="form-control form-control-lg shadow-sm" placeholder="🔍 搜尋客戶姓名、電話或地址..." style="max-width: 500px; border-radius: 50px; padding-left: 20px;">
             </div>
 
-            <div class="card border-0 shadow-sm p-4">
+            <div class="card border-0 shadow-sm p-4 table-card">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>公司名稱</th>
-                                <th>聯絡人</th>
-                                <th>城市</th>
+                                <th>客戶姓名</th>
                                 <th>聯絡電話</th>
+                                <th>收件地址</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="customer-list">
-                            <tr><td colspan="6" class="text-center py-5">資料讀取中...</td></tr>
+                            <tr><td colspan="5" class="text-center py-5">資料讀取中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -61,18 +74,23 @@
 
     <div class="modal fade" id="addModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-content" style="border-radius: 25px; border: none;">
                 <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">📝 新增客戶資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
                     <form id="addForm">
-                        <div class="mb-3"><label class="form-label">公司名稱 (company)</label><input type="text" id="in_company" class="form-control" required></div>
-                        <div class="row">
-                            <div class="col-6 mb-3"><label class="form-label">姓 (last_name)</label><input type="text" id="in_last" class="form-control"></div>
-                            <div class="col-6 mb-3"><label class="form-label">名 (first_name)</label><input type="text" id="in_first" class="form-control"></div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">客戶姓名</label>
+                            <input type="text" id="in_name" class="form-control form-control-lg" required>
                         </div>
-                        <div class="mb-3"><label class="form-label">城市 (city)</label><input type="text" id="in_city" class="form-control"></div>
-                        <div class="mb-3"><label class="form-label">聯絡電話 (business_phone)</label><input type="text" id="in_phone" class="form-control"></div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3">確認新增</button>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">聯絡電話</label>
+                            <input type="text" id="in_phone" class="form-control form-control-lg" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">收件地址</label>
+                            <input type="text" id="in_address" class="form-control form-control-lg" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm">確認新增</button>
                     </form>
                 </div>
             </div>
@@ -81,15 +99,24 @@
 
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 20px; border: 3px solid var(--theme-orange-deep);">
+            <div class="modal-content" style="border-radius: 25px; border: 3px solid var(--theme-orange-deep);">
                 <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">✏️ 修改客戶資訊</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
                     <form id="editForm">
                         <input type="hidden" id="edit_id">
-                        <div class="mb-3"><label class="form-label fw-bold">公司名稱</label><input type="text" id="edit_company" class="form-control form-control-lg border-primary" required></div>
-                        <div class="mb-3"><label class="form-label fw-bold">城市</label><input type="text" id="edit_city" class="form-control form-control-lg"></div>
-                        <div class="mb-3"><label class="form-label fw-bold">聯絡電話</label><input type="text" id="edit_phone" class="form-control form-control-lg border-success"></div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5">✅ 儲存修改</button>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">客戶姓名</label>
+                            <input type="text" id="edit_name" class="form-control form-control-lg border-primary" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">聯絡電話</label>
+                            <input type="text" id="edit_phone" class="form-control form-control-lg border-success" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">收件地址</label>
+                            <input type="text" id="edit_address" class="form-control form-control-lg" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm">✅ 儲存修改</button>
                     </form>
                 </div>
             </div>
@@ -110,21 +137,21 @@
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
-        // 1. 抓取資料
+        // 1. 抓取資料 (改用 business_phone)
         async function fetchCustomers() {
             try {
                 const { data, error } = await client
                     .from('customers')
-                    .select('id, company, last_name, first_name, city, business_phone, is_deleted')
+                    .select('id, first_name, business_phone, address, is_deleted')
                     .eq('is_deleted', showDeleted)
-                    .order('id', { ascending: true });
+                    .order('id', { ascending: false });
 
                 if (error) throw error;
                 allCustomers = data;
                 render(data);
             } catch (err) {
                 console.error(err);
-                document.getElementById('customer-list').innerHTML = `<tr><td colspan="6" class="text-center text-danger">讀取失敗</td></tr>`;
+                document.getElementById('customer-list').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-5">讀取失敗：${err.message}</td></tr>`;
             }
         }
 
@@ -134,45 +161,48 @@
             tbody.innerHTML = list.map(c => `
                 <tr>
                     <td class="text-muted small">${c.id}</td>
-                    <td class="fw-bold fs-5">${c.company || '---'}</td>
-                    <td>${(c.last_name || '') + (c.first_name || '') || '---'}</td>
-                    <td><span class="badge bg-light text-dark px-3 py-2">${c.city || '未知'}</span></td>
-                    <td class="fw-bold text-success">${c.business_phone || '---'}</td>
+                    <td class="fw-bold fs-5" style="color: var(--theme-orange-deep);">${c.first_name || '---'}</td>
+                    <td class="fw-bold text-dark">${c.business_phone || '---'}</td>
+                    <td class="text-muted">${c.address || '未提供地址'}</td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-outline-dark fw-bold" onclick="openEditModal(${c.id})">✏️ 編輯</button>
                             ${showDeleted 
-                                ? `<button class="btn btn-sm btn-outline-primary" onclick="updateStatus(${c.id}, false)">還原</button>` 
-                                : `<button class="btn btn-sm btn-outline-danger" onclick="updateStatus(${c.id}, true)">刪除</button>`}
+                                ? `<button class="btn btn-sm btn-outline-primary fw-bold" onclick="updateStatus(${c.id}, false)">還原</button>` 
+                                : `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="updateStatus(${c.id}, true)">刪除</button>`}
                         </div>
                     </td>
                 </tr>`).join('');
-            if(list.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">目前名單是空的</td></tr>`;
+            if(list.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">目前名單是空的</td></tr>`;
         }
 
-        // 3. 開啟編輯視窗
+        // 3. 開啟編輯視窗並填入資料
         function openEditModal(id) {
             const c = allCustomers.find(item => item.id === id);
             if (!c) return;
             document.getElementById('edit_id').value = c.id;
-            document.getElementById('edit_company').value = c.company;
-            document.getElementById('edit_city').value = c.city;
-            document.getElementById('edit_phone').value = c.business_phone;
+            document.getElementById('edit_name').value = c.first_name || '';
+            document.getElementById('edit_phone').value = c.business_phone || '';
+            document.getElementById('edit_address').value = c.address || '';
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
 
-        // 4. 送出編輯
+        // 4. 送出修改
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit_id').value;
             const { error } = await client.from('customers').update({
-                company: document.getElementById('edit_company').value,
-                city: document.getElementById('edit_city').value,
-                business_phone: document.getElementById('edit_phone').value
+                first_name: document.getElementById('edit_name').value,
+                business_phone: document.getElementById('edit_phone').value,
+                address: document.getElementById('edit_address').value
             }).eq('id', id);
 
-            if (error) alert('修改失敗');
-            else { alert('修改成功！'); location.reload(); }
+            if (error) {
+                alert('修改失敗：' + error.message);
+            } else {
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                fetchCustomers();
+            }
         });
 
         // 5. 更新刪除狀態
@@ -191,29 +221,34 @@
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const { error } = await client.from('customers').insert([{
-                company: document.getElementById('in_company').value,
-                last_name: document.getElementById('in_last').value,
-                first_name: document.getElementById('in_first').value,
-                city: document.getElementById('in_city').value,
+                first_name: document.getElementById('in_name').value,
                 business_phone: document.getElementById('in_phone').value,
+                address: document.getElementById('in_address').value,
                 is_deleted: false
             }]);
-            if (!error) location.reload();
-            else alert('新增失敗：' + error.message);
+            
+            if (!error) {
+                bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+                document.getElementById('addForm').reset();
+                fetchCustomers();
+            } else {
+                alert('新增失敗：' + error.message);
+            }
         });
 
-        // 7. 即時搜尋
+        // 7. 即時搜尋功能
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const key = e.target.value.toLowerCase();
             const filtered = allCustomers.filter(c => 
-                (c.company || '').toLowerCase().includes(key) || 
+                (c.first_name || '').toLowerCase().includes(key) || 
                 (c.business_phone || '').includes(key) ||
-                ((c.last_name || '') + (c.first_name || '')).toLowerCase().includes(key)
+                (c.address || '').toLowerCase().includes(key)
             );
             render(filtered);
         });
 
         function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
+        
         fetchCustomers();
     </script>
 </body>

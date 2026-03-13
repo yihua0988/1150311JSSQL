@@ -21,7 +21,7 @@
 
         .top-nav {
             background: #ffffff;
-            padding: 1.5rem 3rem !important; /* 統一放大版導覽列 */
+            padding: 1.5rem 3rem !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: sticky;
             top: 0;
@@ -80,7 +80,9 @@
         <a href="../index.html" class="text-decoration-none navbar-brand">🛍️ 活力購物網</a>
         <div class="d-flex gap-4 align-items-center">
             <a href="../index.html" class="text-decoration-none text-dark fw-bold fs-5">首頁</a>
-            <a href="cart.html" class="text-decoration-none text-dark fw-bold fs-5">🛒 購物車</a>
+            <a href="cart.html" class="text-decoration-none text-dark fw-bold fs-5">
+                🛒 購物車 <span id="cart-count-badge" class="cart-badge">0</span>
+            </a>
             <span class="fw-bold fs-5" style="color: var(--yanni-orange);">💳 結帳中心</span>
         </div>
     </nav>
@@ -97,20 +99,20 @@
                     <form id="checkout-form" onsubmit="processCheckout(event)">
                         <div class="section-title fs-4">
                             <span class="badge rounded-circle bg-orange" style="background: var(--yanni-orange); width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">1</span>
-                            收件人資料
+                            收件人資料                        
                         </div>
                         <div class="row g-3 mb-5">
                             <div class="col-md-6">
                                 <label class="form-label">收件人姓名</label>
-                                <input type="text" class="form-control form-control-lg" required>
+                                <input type="text" id="cust_name" class="form-control form-control-lg" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">聯絡電話</label>
-                                <input type="tel" class="form-control form-control-lg" required placeholder="09xx-xxx-xxx">
+                                <input type="tel" id="cust_phone" class="form-control form-control-lg" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">收件地址</label>
-                                <input type="text" class="form-control form-control-lg" required placeholder="請輸入詳細地址">
+                                <input type="text" id="cust_address" class="form-control form-control-lg" required>
                             </div>
                         </div>
 
@@ -141,9 +143,10 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn-yanni w-100 mt-4 shadow">
+                        <button type="submit" id="submit-btn" class="btn-yanni w-100 mt-4 shadow">
                             ✅ 確認付款並送出訂單
                         </button>
+						
                     </form>
                 </div>
             </div>
@@ -177,9 +180,25 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
     <script>
         const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // 更新導覽列購物車小紅點
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            const totalQuantity = cart.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+            const badge = document.getElementById('cart-count-badge');
+            if (badge) {
+                badge.innerText = totalQuantity;
+                badge.style.display = totalQuantity === 0 ? 'none' : 'inline-block';
+            }
+        }
+
+        // 載入購物車明細的函數
         function loadOrderSummary() {
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             const container = document.getElementById('order-items-container');
@@ -188,7 +207,6 @@
 
             if (cart.length === 0) {
                 alert("🛒 您的購物車是空的！");
-                // 修正 2：跳轉回根目錄
                 window.location.href = "../index.html";
                 return;
             }
@@ -213,6 +231,8 @@
             const shippingFee = 60;
             subtotalEl.innerText = formatter.format(subtotal);
             totalEl.innerText = formatter.format(subtotal + shippingFee);
+            
+            updateCartBadge(); // 順便更新右上角的數字
         }
 
         function toggleCreditCardInfo() {
@@ -220,18 +240,118 @@
             const fields = document.getElementById('credit-card-fields');
             fields.style.display = (method === 'credit') ? 'block' : 'none';
         }
-
-        // 🌟 修正 3：結帳成功後跳轉回根目錄
-        function processCheckout(event) {
+        
+        async function processCheckout(event) {
             event.preventDefault(); 
-            alert("🎉 結帳成功！系統已收到您的訂單，即將為您安排出貨。");
-            // 清空購物車
-            localStorage.removeItem('northwind_cart');
-            // 跳轉回首頁
-            window.location.href = "../index.html";
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "處理中，請稍候...";
+            
+            const name = document.getElementById('cust_name').value;
+            const phone = document.getElementById('cust_phone').value;
+            const address = document.getElementById('cust_address').value;
+            const paymentMethod = document.getElementById('payment-method').value;
+            
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            if (cart.length === 0) {
+                alert("購物車是空的！");
+                window.location.href = "../index.html";
+                return;
+            }
+            
+            let subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            let totalAmount = subtotal + 60; 
+
+            try {
+                // 1. 檢查客戶是否存在
+                let customerId;
+                const { data: existCust, error: searchErr } = await client
+                    .from('customers')
+                    .select('id')
+                    .eq('first_name', name)
+                    .eq('business_phone', phone)
+                    .eq('address', address);
+
+                if (searchErr) throw searchErr;
+
+                if (existCust && existCust.length > 0) {
+                    customerId = existCust[0].id;
+                } else {
+                    const { data: newCust, error: insertCustErr } = await client
+                        .from('customers')
+                        .insert([{ first_name: name, business_phone: phone, address: address, is_deleted: false }])
+                        .select();
+                        
+                    if (insertCustErr) throw insertCustErr;
+                    customerId = newCust[0].id;
+                }
+
+                // 2. 建立主訂單
+                const { data: newOrder, error: orderErr } = await client
+                    .from('orders')
+                    .insert([{ 
+                        customer_id: customerId, 
+                        order_date: new Date().toISOString(),
+                        total_amount: totalAmount,
+                        payment_method: paymentMethod,
+                        status: '待處理' 
+                    }])
+                    .select();
+
+                if (orderErr) throw orderErr;
+                const orderId = newOrder[0].id;
+
+                // 3. 建立訂單明細
+                const orderDetailsData = cart.map(item => ({
+                    order_id: orderId,
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    unit_price: item.price
+                }));
+
+                const { error: detailsErr } = await client
+                    .from('order_details')
+                    .insert(orderDetailsData);
+
+                if (detailsErr) throw detailsErr;
+				// 🌟 4. 更新商品庫存 (非常重要！)
+				for (const item of cart) {
+					// 先去資料庫抓出該商品目前的庫存量
+					const { data: prodData, error: fetchErr } = await client
+						.from('products')
+						.select('reorder_level')
+						.eq('id', item.id)
+						.single();
+						
+					if (!fetchErr && prodData) {
+						// 計算扣除後的數量 (最低扣到 0，不變負數)
+						let newStock = prodData.reorder_level - item.quantity;
+						if (newStock < 0) newStock = 0;
+
+						// 寫回資料庫
+						await client
+							.from('products')
+							.update({ reorder_level: newStock })
+							.eq('id', item.id);
+			}
+		}
+                // 🎉 全部成功！
+                alert("🎉 結帳成功！系統已收到您的訂單，即將為您安排出貨。");
+                localStorage.removeItem('northwind_cart');
+                window.location.href = "../index.html";
+
+            } catch (err) {
+                console.error("結帳發生錯誤詳細資訊:", err);
+                alert("結帳失敗，資料庫訊息：" + (err.message || JSON.stringify(err)));
+                submitBtn.disabled = false;
+                submitBtn.innerText = "✅ 確認付款並送出訂單";
+            }
         }
 
+        // 初始化
         loadOrderSummary();
+        window.addEventListener('storage', loadOrderSummary);
     </script>
 </body>
 </html>
