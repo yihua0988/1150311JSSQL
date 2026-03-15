@@ -72,6 +72,16 @@
         }
         .order-item:last-child { border-bottom: none; }
         .price-text { color: var(--yanni-orange); font-weight: 700; }
+        
+        /* 輔助標籤樣式 */
+        .section-badge {
+            background: var(--yanni-orange); 
+            width: 35px; 
+            height: 35px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="frontend">
@@ -97,56 +107,77 @@
             <div class="col-lg-7">
                 <div class="glass-card card p-4 p-md-5 shadow-sm">
                     <form id="checkout-form" onsubmit="processCheckout(event)">
+                        
                         <div class="section-title fs-4">
-                            <span class="badge rounded-circle bg-orange" style="background: var(--yanni-orange); width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">1</span>
+                            <span class="badge rounded-circle section-badge">1</span>
                             收件人資料                        
                         </div>
                         <div class="row g-3 mb-5">
                             <div class="col-md-6">
-                                <label class="form-label">收件人姓名</label>
+                                <label class="form-label">收件人姓名 <span class="text-danger">*</span></label>
                                 <input type="text" id="cust_name" class="form-control form-control-lg" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">聯絡電話</label>
+                                <label class="form-label">聯絡電話 <span class="text-danger">*</span></label>
                                 <input type="tel" id="cust_phone" class="form-control form-control-lg" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">收件地址</label>
+                                <label class="form-label">收件地址 <span class="text-danger">*</span></label>
                                 <input type="text" id="cust_address" class="form-control form-control-lg" required>
                             </div>
                         </div>
 
                         <div class="section-title fs-4">
-                            <span class="badge rounded-circle bg-orange" style="background: var(--yanni-orange); width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">2</span>
+                            <span class="badge rounded-circle section-badge">2</span>
+                            配送與發票
+                        </div>
+                        <div class="row g-3 mb-5">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">⏰ 期望收件時間</label>
+                                <select class="form-select form-select-lg" id="delivery-time">
+                                    <option value="不指定">不指定</option>
+                                    <option value="早上 (09:00-12:00)">早上 (09:00-12:00)</option>
+                                    <option value="下午 (13:00-17:00)">下午 (13:00-17:00)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">🧾 發票方式</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="invoiceType" id="invoice-personal" value="個人電子發票" checked onchange="toggleInvoice()">
+                                    <label class="form-check-label" for="invoice-personal">個人電子發票 (會員載具)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="invoiceType" id="invoice-mobile" value="手機條碼載具" onchange="toggleInvoice()">
+                                    <label class="form-check-label" for="invoice-mobile">手機條碼載具</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="invoiceType" id="invoice-company" value="公司統編" onchange="toggleInvoice()">
+                                    <label class="form-check-label" for="invoice-company">公司統編</label>
+                                </div>
+                                <input type="text" class="form-control" id="invoice-detail" style="display:none;" placeholder="">
+                            </div>
+                            <div class="col-12">
+                                <label for="order-remarks" class="form-label fw-bold">📝 訂單備註</label>
+                                <textarea class="form-control" id="order-remarks" rows="2" placeholder="有什麼想告訴我們的嗎？(例如：請放在管理室、到貨前請先電話聯絡)"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="section-title fs-4">
+                            <span class="badge rounded-circle section-badge">3</span>
                             付款資訊
                         </div>
                         <div class="mb-4">
                             <label class="form-label">選擇付款方式</label>
-                            <select class="form-select form-select-lg mb-3" required id="payment-method" onchange="toggleCreditCardInfo()">
+                            <select class="form-select form-select-lg mb-3" required id="payment-method">
                                 <option value="cod">🚚 貨到付款 (最推薦)</option>
-                                <option value="credit">💳 信用卡 / 簽帳金融卡</option>
                                 <option value="transfer">🏦 銀行轉帳 / ATM</option>
                             </select>
-
-                            <div id="credit-card-fields" style="display:none;" class="p-3 bg-light rounded-4">
-                                <div class="mb-3">
-                                    <input type="text" class="form-control" placeholder="信用卡號 (16碼)" pattern="\d{16}">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="text" class="form-control" placeholder="有效期限 (MM/YY)">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" class="form-control" placeholder="安全碼 (CVV)">
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <button type="submit" id="submit-btn" class="btn-yanni w-100 mt-4 shadow">
-                            ✅ 確認付款並送出訂單
+                            ✅ 確認無誤並送出訂單
                         </button>
-						
+                        
                     </form>
                 </div>
             </div>
@@ -186,6 +217,28 @@
     <script>
         const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 切換發票輸入框顯示狀態
+        function toggleInvoice() {
+            const type = document.querySelector('input[name="invoiceType"]:checked').value;
+            const detailInput = document.getElementById('invoice-detail');
+            
+            if (type === '手機條碼載具') {
+                detailInput.style.display = 'block';
+                detailInput.placeholder = '請輸入手機載具 (如：/ABC1234)';
+                detailInput.required = true;
+                detailInput.value = '';
+            } else if (type === '公司統編') {
+                detailInput.style.display = 'block';
+                detailInput.placeholder = '請輸入統一編號 (8碼)';
+                detailInput.required = true;
+                detailInput.value = '';
+            } else {
+                detailInput.style.display = 'none';
+                detailInput.required = false;
+                detailInput.value = ''; 
+            }
+        }
 
         // 更新導覽列購物車小紅點
         function updateCartBadge() {
@@ -232,13 +285,7 @@
             subtotalEl.innerText = formatter.format(subtotal);
             totalEl.innerText = formatter.format(subtotal + shippingFee);
             
-            updateCartBadge(); // 順便更新右上角的數字
-        }
-
-        function toggleCreditCardInfo() {
-            const method = document.getElementById('payment-method').value;
-            const fields = document.getElementById('credit-card-fields');
-            fields.style.display = (method === 'credit') ? 'block' : 'none';
+            updateCartBadge();
         }
         
         async function processCheckout(event) {
@@ -252,6 +299,12 @@
             const phone = document.getElementById('cust_phone').value;
             const address = document.getElementById('cust_address').value;
             const paymentMethod = document.getElementById('payment-method').value;
+            
+            // 🌟 抓取新增的欄位資料
+            const deliveryTime = document.getElementById('delivery-time').value;
+            const invoiceType = document.querySelector('input[name="invoiceType"]:checked').value;
+            const invoiceDetail = document.getElementById('invoice-detail').value;
+            const orderRemarks = document.getElementById('order-remarks').value;
             
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             if (cart.length === 0) {
@@ -287,7 +340,7 @@
                     customerId = newCust[0].id;
                 }
 
-                // 2. 建立主訂單
+                // 2. 建立主訂單 (寫入新增的欄位)
                 const { data: newOrder, error: orderErr } = await client
                     .from('orders')
                     .insert([{ 
@@ -295,7 +348,12 @@
                         order_date: new Date().toISOString(),
                         total_amount: totalAmount,
                         payment_method: paymentMethod,
-                        status: '待處理' 
+                        status: '待處理',
+                        // 🌟 將新資料寫入 Supabase
+                        delivery_time: deliveryTime,
+                        invoice_type: invoiceType,
+                        invoice_detail: invoiceDetail,
+                        order_remarks: orderRemarks
                     }])
                     .select();
 
@@ -315,27 +373,26 @@
                     .insert(orderDetailsData);
 
                 if (detailsErr) throw detailsErr;
-				// 🌟 4. 更新商品庫存 (非常重要！)
-				for (const item of cart) {
-					// 先去資料庫抓出該商品目前的庫存量
-					const { data: prodData, error: fetchErr } = await client
-						.from('products')
-						.select('reorder_level')
-						.eq('id', item.id)
-						.single();
-						
-					if (!fetchErr && prodData) {
-						// 計算扣除後的數量 (最低扣到 0，不變負數)
-						let newStock = prodData.reorder_level - item.quantity;
-						if (newStock < 0) newStock = 0;
+                
+                // 4. 更新商品庫存
+                for (const item of cart) {
+                    const { data: prodData, error: fetchErr } = await client
+                        .from('products')
+                        .select('reorder_level')
+                        .eq('id', item.id)
+                        .single();
+                        
+                    if (!fetchErr && prodData) {
+                        let newStock = prodData.reorder_level - item.quantity;
+                        if (newStock < 0) newStock = 0;
 
-						// 寫回資料庫
-						await client
-							.from('products')
-							.update({ reorder_level: newStock })
-							.eq('id', item.id);
-			}
-		}
+                        await client
+                            .from('products')
+                            .update({ reorder_level: newStock })
+                            .eq('id', item.id);
+                    }
+                }
+                
                 // 🎉 全部成功！
                 alert("🎉 結帳成功！系統已收到您的訂單，即將為您安排出貨。");
                 localStorage.removeItem('northwind_cart');
@@ -345,7 +402,7 @@
                 console.error("結帳發生錯誤詳細資訊:", err);
                 alert("結帳失敗，資料庫訊息：" + (err.message || JSON.stringify(err)));
                 submitBtn.disabled = false;
-                submitBtn.innerText = "✅ 確認付款並送出訂單";
+                submitBtn.innerText = "✅ 確認無誤並送出訂單";
             }
         }
 

@@ -3,16 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>⚙️ 活力電商後台</title>
+    <title>⚙️ 活力電商後台 - 營運儀表板</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     
     <style>
-        /* 🌟 數據方塊樣式優化 (不限制寬度，填滿空間) */
+        /* 🌟 數據方塊樣式優化 */
         .stat-tile {
             background: #ffffff !important;
             border-radius: 30px !important;
-            padding: 3rem 1.5rem !important; /* 增加上下間距，讓滿版看起來更大氣 */
+            padding: 3rem 1.5rem !important; 
             text-align: center;
             border: 1px solid rgba(0,0,0,0.05) !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
@@ -37,7 +37,7 @@
         }
 
         .stat-tile-number {
-            font-size: 4.5rem !important; /* 恢復大數字，視覺張力更強 */
+            font-size: 4.5rem !important; 
             font-weight: 900 !important;
             line-height: 1;
             margin: 20px 0;
@@ -65,6 +65,15 @@
         }
         .btn-restock-now:hover { background-color: #c0392b; }
 
+        /* 圖表卡片樣式 */
+        .chart-card {
+            background: #ffffff;
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
         /* 手機版字體微調 */
         @media (max-width: 768px) {
             .stat-tile-number {
@@ -85,7 +94,8 @@
             </div>
             
             <a href="admin.html" class="nav-item active">📊 營運儀表板</a>
-            <a href="orders.html" class="nav-item">📋 訂單管理</a> <a href="customers.html" class="nav-item">👥 客戶管理</a>
+            <a href="orders.html" class="nav-item">📋 訂單管理</a> 
+            <a href="customers.html" class="nav-item">👥 客戶管理</a>
             <a href="products.html" class="nav-item">📦 庫存管理</a>
             
             <div style="flex-grow: 1;"></div> 
@@ -96,7 +106,7 @@
         </nav>
 
         <main class="main-content">
-            <div class="card p-5 mb-5 border-0 shadow-sm" style="border-radius: 30px !important;">
+            <div class="card p-5 mb-4 border-0 shadow-sm" style="border-radius: 30px !important;">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div>
                         <h1 class="page-title mb-2" style="font-weight: 900;">活力電商後台</h1>
@@ -106,7 +116,7 @@
                 </div>
             </div>
 
-            <div class="row g-4">
+            <div class="row g-4 mb-5">
                 <div class="col-md-4">
                     <div class="stat-tile" onclick="location.href='customers.html'">
                         <span class="stat-tile-label">👥 總客戶數</span>
@@ -133,28 +143,232 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row g-4 mb-5">
+                <div class="col-12">
+                    <div class="chart-card">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 border-bottom pb-3">
+                            <div>
+                                <h4 class="fw-bold text-secondary mb-2">📈 銷售數據排行 (Top 10)</h4>
+                                <h4 class="fw-bold mb-0" style="color: var(--theme-orange-deep);">
+                                    總計：<span id="chart-total-display">--</span>
+                                </h4>
+                            </div>
+                            
+                            <div class="d-flex flex-wrap gap-2 align-items-end bg-light p-3 rounded-4 border">
+                                <div>
+                                    <small class="text-muted d-block fw-bold">開始日期</small>
+                                    <input type="date" id="filter-start" class="form-control form-control-sm border-0 shadow-sm">
+                                </div>
+                                <div class="px-1 text-muted d-flex align-items-end pb-1">~</div>
+                                <div>
+                                    <small class="text-muted d-block fw-bold">結束日期</small>
+                                    <input type="date" id="filter-end" class="form-control form-control-sm border-0 shadow-sm">
+                                </div>
+                                <button class="btn btn-sm btn-dark shadow-sm px-3" onclick="fetchChartData()">🔍 篩選</button>
+                                <button class="btn btn-sm btn-outline-secondary shadow-sm" onclick="resetFilter()">重置</button>
+
+                                <div class="border-start border-2 mx-2"></div>
+
+                                <div>
+                                    <small class="text-muted d-block fw-bold">分析指標</small>
+                                    <select id="chart-metric-select" class="form-select form-select-sm w-auto fw-bold shadow-sm border-0 text-primary" onchange="changeChartMetric()">
+                                        <option value="revenue">💰 總營收排行</option>
+                                        <option value="volume">📦 總銷量排行</option>
+                                        <option value="shipped_revenue">✨ 淨利排行 (已出貨)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="position: relative; height: 400px; width: 100%;">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
     <script src="Sk2edwpokS.js"></script>
 
     <script>
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // 設定當前日期
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('zh-TW', { 
             year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' 
         });
 
-        // 登入驗證
         const adminData = localStorage.getItem('admin_user');
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
         function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
 
-        async function loadStats() {
+        // 圖表全域變數
+        let salesChartInstance = null; 
+        let globalSalesData = [];      
+
+        // 🌟 繪製或更新圖表的函數
+        function renderSalesChart(data, metric) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChartInstance) {
+                salesChartInstance.destroy();
+            }
+            
+            // 排序並取前 10 名
+            const sortedData = [...data].sort((a, b) => b[metric] - a[metric]).slice(0, 10);
+            
+            const labels = sortedData.map(item => item.product_name);
+            const values = sortedData.map(item => item[metric]);
+            
+            let labelName = '';
+            let bgColor = '';
+            let prefix = '';
+
+            if (metric === 'total_revenue') {
+                labelName = '商品總營收';
+                bgColor = '#E95513'; 
+                prefix = '$';
+            } else if (metric === 'total_sold_qty') {
+                labelName = '商品總銷量';
+                bgColor = '#3498db'; 
+                prefix = '';
+            } else if (metric === 'shipped_revenue') {
+                labelName = '淨利 (已出貨)';
+                bgColor = '#2ecc71'; 
+                prefix = '$';
+            }
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'bar', 
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelName,
+                        data: values,
+                        backgroundColor: bgColor,
+                        borderRadius: 8,            
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, 
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    let unit = metric === 'total_sold_qty' ? ' 件' : '';
+                                    return labelName + ': ' + prefix + value.toLocaleString() + unit;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return prefix + value.toLocaleString(); 
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 🌟 下拉選單觸發的函數 (同時計算總額)
+        function changeChartMetric() {
+            const val = document.getElementById('chart-metric-select').value;
+            let metricKey = 'total_revenue'; 
+            
+            if (val === 'volume') metricKey = 'total_sold_qty';
+            if (val === 'shipped_revenue') metricKey = 'shipped_revenue';
+            
+            // 畫出圖表
+            renderSalesChart(globalSalesData, metricKey);
+
+            // 計算目前篩選結果的「總計」並顯示
+            const totalSum = globalSalesData.reduce((sum, item) => sum + item[metricKey], 0);
+            const prefix = metricKey === 'total_sold_qty' ? '' : '$';
+            const unit = metricKey === 'total_sold_qty' ? ' 件' : '';
+            document.getElementById('chart-total-display').innerText = prefix + totalSum.toLocaleString() + unit;
+        }
+
+        // 🌟 根據日期動態抓取並計算資料
+        async function fetchChartData() {
+            const startDate = document.getElementById('filter-start').value;
+            const endDate = document.getElementById('filter-end').value;
+
+            try {
+                // 使用關聯查詢：訂單明細 + 訂單狀態/日期 + 商品名稱
+                let query = client
+                    .from('order_details')
+                    .select(`
+                        quantity, 
+                        unit_price,
+                        products ( id, product_name ),
+                        orders!inner ( status, order_date )
+                    `)
+                    .neq('orders.status', '已取消'); // 排除已取消訂單
+
+                // 加上日期篩選條件
+                if (startDate) query = query.gte('orders.order_date', startDate + 'T00:00:00');
+                if (endDate) query = query.lte('orders.order_date', endDate + 'T23:59:59');
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                // 在前端進行彙整加總
+                const map = {};
+                data.forEach(row => {
+                    const pId = row.products?.id;
+                    const pName = row.products?.product_name || '未知商品';
+                    if(!pId) return;
+
+                    if(!map[pId]) {
+                        map[pId] = { product_name: pName, total_sold_qty: 0, total_revenue: 0, shipped_revenue: 0 };
+                    }
+                    
+                    const qty = row.quantity;
+                    const rev = qty * row.unit_price;
+                    const status = row.orders.status;
+                    
+                    map[pId].total_sold_qty += qty;
+                    map[pId].total_revenue += rev;
+                    // ✨ 淨利計算邏輯保持不變
+                    if(status === '已出貨' || status === '已完成') {
+                        map[pId].shipped_revenue += rev; 
+                    }
+                });
+
+                globalSalesData = Object.values(map);
+                changeChartMetric(); // 更新圖表與總計金額
+
+            } catch (err) {
+                console.error('載入圖表資料失敗:', err);
+                alert('無法載入圖表資料，請稍後再試！');
+            }
+        }
+
+        // 清空日期篩選
+        function resetFilter() {
+            document.getElementById('filter-start').value = '';
+            document.getElementById('filter-end').value = '';
+            fetchChartData();
+        }
+
+        // 載入上方三個方塊數據
+        async function loadTopTiles() {
             try {
                 const [cRes, oRes, pOutRes] = await Promise.all([
                     client.from('customers').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
@@ -186,10 +400,12 @@
                     areaEl.innerHTML = '<button class="btn-restock-now shadow-sm">🚀 立即補貨</button>';
                     boxEl.style.background = "#FFF5F5";
                 }
-            } catch (err) { console.error('Error loading data:', err); }
+            } catch (err) { console.error('載入方塊資料失敗:', err); }
         }
 
-        loadStats();
+        // 初始化
+        loadTopTiles();
+        fetchChartData(); 
     </script>
 </body>
 </html>

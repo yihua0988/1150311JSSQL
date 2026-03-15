@@ -41,7 +41,8 @@
                 <span id="admin-display-name" class="text-white fw-bold fs-4">管理員</span>
             </div>
             <a href="admin.html" class="nav-item">📊 營運儀表板</a>
-            <a href="orders.html" class="nav-item active">📋 訂單管理</a> <a href="customers.html" class="nav-item">👥 客戶管理</a>
+            <a href="orders.html" class="nav-item active">📋 訂單管理</a> 
+            <a href="customers.html" class="nav-item">👥 客戶管理</a>
             <a href="products.html" class="nav-item">📦 庫存管理</a>
             <div style="flex-grow: 1;"></div> 
             <hr class="text-white-50">
@@ -86,12 +87,26 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="bg-light p-3 rounded-4 mb-4">
+                    
+                    <div class="bg-light p-3 rounded-4 mb-3">
                         <h6 class="fw-bold mb-3 text-secondary">📦 寄送資訊</h6>
                         <div class="row">
                             <div class="col-sm-6"><p class="mb-1"><strong>收件人：</strong> <span id="modal-cust-name"></span></p></div>
                             <div class="col-sm-6"><p class="mb-1"><strong>電話：</strong> <span id="modal-cust-phone"></span></p></div>
                             <div class="col-12"><p class="mb-0"><strong>地址：</strong> <span id="modal-cust-address"></span></p></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded-4 mb-4">
+                        <h6 class="fw-bold mb-3 text-secondary">🏷️ 配送與發票設定</h6>
+                        <div class="row">
+                            <div class="col-sm-6"><p class="mb-1"><strong>⏰ 收件時間：</strong> <span id="modal-delivery-time" class="text-primary fw-bold"></span></p></div>
+                            <div class="col-sm-6"><p class="mb-1"><strong>🧾 發票方式：</strong> <span id="modal-invoice-info"></span></p></div>
+                            <div class="col-12 mt-2" id="modal-remarks-container" style="display: none;">
+                                <div class="alert alert-warning mb-0 p-2 small">
+                                    <strong>📝 買家備註：</strong> <span id="modal-order-remarks"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -150,7 +165,7 @@
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
-        // 1. 載入主訂單資料 (使用強大的 Join 語法把客戶資料一起抓出來)
+        // 1. 載入主訂單資料 (🌟 加入新增的 4 個欄位)
         async function fetchOrders() {
             try {
                 const { data, error } = await client
@@ -161,6 +176,10 @@
                         total_amount, 
                         payment_method, 
                         status,
+                        delivery_time,
+                        invoice_type,
+                        invoice_detail,
+                        order_remarks,
                         customers ( first_name, business_phone, address )
                     `)
                     .order('id', { ascending: false });
@@ -183,27 +202,26 @@
             }
 
             tbody.innerHTML = list.map(order => {
-                // 格式化日期
                 const dateObj = new Date(order.order_date);
                 const dateStr = dateObj.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
                 
-                // 客戶防呆 (避免客戶被刪除後找不到)
                 const custName = order.customers ? order.customers.first_name : '未知客戶';
                 const custPhone = order.customers ? order.customers.business_phone : '無電話';
 
-                // 狀態標籤樣式對應
                 let statusClass = 'status-pending';
                 if(order.status === '已出貨') statusClass = 'status-shipped';
                 if(order.status === '已完成') statusClass = 'status-completed';
                 if(order.status === '已取消') statusClass = 'status-cancelled';
 
-                // 付款方式美化
                 let payText = order.payment_method === 'cod' ? '🚚 貨到付款' : 
                               order.payment_method === 'credit' ? '💳 信用卡' : '🏦 銀行轉帳';
 
+                // 🌟 如果有備註，在訂單編號旁加上提示標籤
+                const remarkBadge = order.order_remarks ? `<span class="badge bg-warning text-dark ms-2">📝 有備註</span>` : '';
+
                 return `
                 <tr>
-                    <td class="fw-bold">#${order.id}</td>
+                    <td class="fw-bold">#${order.id} ${remarkBadge}</td>
                     <td class="text-muted small">${dateStr}</td>
                     <td>
                         <div class="fw-bold" style="color: var(--theme-orange-deep);">${custName}</div>
@@ -222,9 +240,8 @@
             }).join('');
         }
 
-        // 3. 查看訂單明細 (呼叫 order_details 表並 Join products 表)
+        // 3. 查看訂單明細
         async function viewOrderDetails(orderId) {
-            // 先找出這筆訂單的主資料填入 Modal 標頭
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
 
@@ -234,13 +251,30 @@
             document.getElementById('modal-cust-address').innerText = order.customers ? order.customers.address : '未知';
             document.getElementById('modal-total-amount').innerText = formatter.format(order.total_amount);
 
-            // 準備載入明細
+            // 🌟 填入新增的配送與發票資訊
+            document.getElementById('modal-delivery-time').innerText = order.delivery_time || '不指定';
+            
+            // 組合發票資訊 (如果有統編或載具號碼就附在後面)
+            let invoiceInfo = order.invoice_type || '未提供';
+            if (order.invoice_detail) {
+                invoiceInfo += ` (${order.invoice_detail})`;
+            }
+            document.getElementById('modal-invoice-info').innerText = invoiceInfo;
+
+            // 控制備註區塊顯示/隱藏
+            const remarksContainer = document.getElementById('modal-remarks-container');
+            if (order.order_remarks) {
+                document.getElementById('modal-order-remarks').innerText = order.order_remarks;
+                remarksContainer.style.display = 'block';
+            } else {
+                remarksContainer.style.display = 'none';
+            }
+
             const tbody = document.getElementById('modal-items-list');
             tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">明細載入中...</td></tr>`;
             new bootstrap.Modal(document.getElementById('detailsModal')).show();
 
             try {
-                // 🌟 神奇的 Join：抓取訂單明細，同時把商品名稱也抓出來！
                 const { data, error } = await client
                     .from('order_details')
                     .select(`
@@ -257,7 +291,6 @@
                     return;
                 }
 
-                // 渲染明細列表
                 tbody.innerHTML = data.map(item => {
                     const prodName = item.products ? item.products.product_name : '未知商品 (可能已下架)';
                     const subtotal = item.unit_price * item.quantity;
@@ -271,7 +304,6 @@
                     `;
                 }).join('');
                 
-                // 加上運費列
                 tbody.innerHTML += `
                     <tr class="table-light text-muted">
                         <td colspan="3" class="text-end">物流運費</td>
@@ -302,7 +334,6 @@
                     
                 if (error) throw error;
                 
-                // 隱藏 Modal 並重新載入資料
                 bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
                 fetchOrders();
             } catch (err) {
@@ -312,7 +343,6 @@
 
         function handleLogout() { localStorage.removeItem('admin_user'); window.location.href = 'login.html'; }
         
-        // 畫面載入時自動抓取資料
         fetchOrders();
     </script>
 </body>

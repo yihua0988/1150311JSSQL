@@ -55,15 +55,14 @@
             align-items: center;
             justify-content: center;
             font-size: 5rem;
-            border-radius: 15px; /* 給圖片加點圓角，更有質感 */
-            overflow: hidden;    /* 避免圖片超出圓角 */
-            position: relative;  /* 讓內部的 img 可以定位 */
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
         }
-        /* 這是真正顯示圖片的標籤樣式 */
         .img-placeholder img {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* 讓圖片填滿空間並自動裁切，不會變形 */
+            object-fit: cover;
             position: absolute;
             top: 0;
             left: 0;
@@ -85,6 +84,10 @@
             font-weight: bold;
             font-size: 1.2rem;
         }
+        .btn-qty:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
         .qty-val {
             width: 40px;
             text-align: center;
@@ -103,7 +106,11 @@
             font-weight: 700;
             transition: 0.3s;
         }
-        .btn-yanni:hover { background-color: #c9440f; color: white; }
+        .btn-yanni:hover:not(:disabled) { background-color: #c9440f; color: white; }
+        .btn-yanni:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -143,10 +150,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="Sk2edwpokS.js"></script> <script>
+    <script src="Sk2edwpokS.js"></script> 
+    <script>
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 🌟 1. 更新導覽列購物車數量的函數
         function updateCartBadge() {
             const cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -158,12 +165,12 @@
             }
         }
 
-        // 🌟 2. 載入產品列表 (加上 image_url 的讀取)
         async function loadAllProducts() {
             try {
+                // 🌟 這裡加入了 reorder_level 欄位
                 const { data, error } = await client
                     .from('products')
-                    .select('id, product_name, product_code, list_price, image_url') // 👈 這裡把 image_url 抓出來
+                    .select('id, product_name, product_code, list_price, image_url, reorder_level') 
                     .eq('is_deleted', false)
                     .order('id', { ascending: true });
 
@@ -173,10 +180,21 @@
                 grid.innerHTML = "";
 
                 data.forEach(p => {
-                    // 🌟 判斷：如果有圖片就顯示圖片，沒有就顯示原本的「💊」預設圖
                     const imageHtml = p.image_url 
                         ? `<img src="${p.image_url}" alt="${p.product_name}">` 
                         : `💊`;
+
+                    // 🌟 處理庫存邏輯 (使用 reorder_level)
+                    const stock = p.reorder_level || 0; 
+                    const isOutOfStock = stock <= 0;
+                    
+                    // 根據庫存決定顯示文字與顏色
+                    const stockDisplay = isOutOfStock 
+                        ? `<span class="text-danger small fw-bold">缺貨中</span>` 
+                        : `<span class="text-success small fw-bold">庫存：${stock}</span>`;
+                    
+                    // 如果缺貨，按鈕跟輸入框加上 disabled 屬性
+                    const disabledAttr = isOutOfStock ? "disabled" : "";
 
                     grid.innerHTML += `
                         <div class="col">
@@ -188,21 +206,25 @@
                                 <div class="card-body d-flex flex-column p-0 mt-3">
                                     <small class="text-muted mb-1">${p.product_code || '精選系列'}</small>
                                     <h4 class="card-title fw-bold mb-2">${p.product_name}</h4>
-                                    <div class="fs-3 fw-bold mb-3" style="color: var(--theme-orange-deep);">$${p.list_price}</div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="fs-3 fw-bold" style="color: var(--theme-orange-deep);">$${p.list_price}</div>
+                                        <div>${stockDisplay}</div>
+                                    </div>
                                     
                                     <div class="mt-auto">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="text-muted small fw-bold">數量</span>
+                                            <span class="text-muted small fw-bold">購買數量：</span>
                                             <div class="qty-input-group">
-                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, -1)">-</button>
-                                                <input type="number" id="qty-${p.id}" class="qty-val" value="1" min="1" readonly>
-                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, 1)">+</button>
+                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, -1, ${stock})" ${disabledAttr}>-</button>
+                                                <input type="number" id="qty-${p.id}" class="qty-val" value="${isOutOfStock ? 0 : 1}" min="1" max="${stock}" readonly ${disabledAttr}>
+                                                <button class="btn-qty" onclick="changeQtyUI(${p.id}, 1, ${stock})" ${disabledAttr}>+</button>
                                             </div>
                                         </div>
 
                                         <button class="btn btn-yanni w-100 py-2 fs-5 shadow-sm" 
-                                            onclick="addToCart(${p.id}, '${p.product_name}', ${p.list_price})">
-                                            🛒 加入購物車
+                                            onclick="addToCart(${p.id}, '${p.product_name}', ${p.list_price}, ${stock})" ${disabledAttr}>
+                                            ${isOutOfStock ? '❌ 補貨中' : '🛒 加入購物車'}
                                         </button>
                                     </div>
                                 </div>
@@ -212,24 +234,37 @@
                 });
             } catch (err) {
                 console.error("載入商品失敗:", err);
+                alert("載入商品失敗，請檢查資料庫連線！");
             }
         }
 
-        // 3. UI 數量調整
-        function changeQtyUI(id, delta) {
+        // 🌟 更新 UI 數量邏輯，加入 maxStock (也就是 reorder_level) 判斷
+        function changeQtyUI(id, delta, maxStock) {
             const input = document.getElementById(`qty-${id}`);
             let val = parseInt(input.value) + delta;
+            
             if (val < 1) val = 1;
+            if (val > maxStock) {
+                val = maxStock;
+                alert(`已經達到目前庫存上限 (${maxStock} 件) 囉！`);
+            }
             input.value = val;
         }
 
-        // 4. 加入購物車邏輯
-        function addToCart(id, name, price) {
+        // 🌟 更新加入購物車邏輯，防止買超過總庫存
+        function addToCart(id, name, price, maxStock) {
             const qtyInput = document.getElementById(`qty-${id}`);
             const quantityToAdd = parseInt(qtyInput.value);
 
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             const found = cart.find(item => item.id === id);
+            
+            // 檢查購物車內現有數量 + 這次要加入的數量，有沒有超過庫存
+            const currentCartQty = found ? found.quantity : 0;
+            if (currentCartQty + quantityToAdd > maxStock) {
+                alert(`購物車內的數量加上這次選購的，已超過庫存上限 (${maxStock} 件)！\n您購物車裡目前已有 ${currentCartQty} 件。`);
+                return;
+            }
             
             if (found) {
                 found.quantity += quantityToAdd;
@@ -244,7 +279,6 @@
             qtyInput.value = 1; 
         }
 
-        // 初始化執行
         loadAllProducts();
         updateCartBadge();
     </script>
