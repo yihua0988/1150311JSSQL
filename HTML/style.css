@@ -156,7 +156,7 @@ body.backend {
     background: linear-gradient(180deg, var(--theme-orange-deep) 0%, var(--theme-orange-light) 100%);
     color: white;
     padding: 2rem 1.5rem;
-    position: fixed !important; /* 👈 桌機版釘死在左邊 */
+    position: fixed !important; 
     left: 0;
     top: 0;
     z-index: 1000;
@@ -165,7 +165,7 @@ body.backend {
 
 .main-content {
     flex: 1;
-    margin-left: var(--sidebar-width) !important; /* 👈 重要：確保內容不被側邊欄擋住 */
+    margin-left: var(--sidebar-width) !important; 
     padding: 3rem !important;
     min-height: 100vh;
 }
@@ -191,19 +191,50 @@ body.backend {
 }
 
 /* =========================================
-   📱 手機版 RWD 徹底修正 (螢幕小於 768px)
+   7. 📱 手機與平板版 RWD 徹底修正 (包含前台導覽列)
    ========================================= */
+@media (max-width: 992px) {
+    /* 前台導覽列：平板縮小邊距 */
+    .top-nav {
+        padding: 1rem 2rem !important;
+    }
+}
+
 @media (max-width: 768px) {
+    /* 🌟 前台導覽列修正：解決字體被垂直擠壓的問題 */
+    .top-nav {
+        padding: 1rem !important; /* 取消巨大的左右內距 */
+        flex-direction: column !important; /* 改為上下排列：Logo 在上，選單在下 */
+        justify-content: center !important;
+        gap: 15px !important;
+    }
+    .top-nav a.navbar-brand h2 {
+        font-size: 1.8rem !important; /* 縮小 Logo 字體 */
+        text-align: center;
+        margin: 0 !important;
+    }
+    .top-nav > div {
+        /* 選單容器 */
+        width: 100%;
+        justify-content: center !important; /* 連結置中 */
+        gap: 15px !important; /* 縮小連結間距，避免撐爆螢幕 */
+        flex-wrap: wrap !important; /* 允許換行 */
+    }
+    .nav-link-custom {
+        font-size: 1.05rem !important; /* 縮小選單字體 */
+    }
+
+    /* 🌟 後台佈局修正 */
     .app-container {
-        flex-direction: column; /* 上下排列 */
+        flex-direction: column; 
     }
 
     .sidebar {
-        position: relative !important; /* 👈 手機版取消固定 */
+        position: relative !important; 
         width: 100% !important;
         height: auto !important;
         padding: 1rem !important;
-        flex-direction: row !important; /* 橫向選單 */
+        flex-direction: row !important; 
         display: flex !important;
         overflow-x: auto;
         white-space: nowrap;

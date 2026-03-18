@@ -9,18 +9,18 @@
     <style>
         /* 🌟 導覽列放大與強化 */
         .top-nav {
-            padding: 1.5rem 3rem !important; /* 加大導覽列 */
+            padding: 1.5rem 3rem !important; 
             background: #ffffff;
             transition: all 0.3s ease;
         }
 
         .top-nav h2 {
-            font-size: 2.2rem !important; /* Logo 放大 */
+            font-size: 2.2rem !important; 
             letter-spacing: -1px;
         }
 
         .nav-link-custom {
-            font-size: 1.25rem !important; /* 文字放大 */
+            font-size: 1.25rem !important; 
             transition: transform 0.2s ease, color 0.2s ease;
             display: inline-block;
         }
@@ -39,7 +39,7 @@
             padding: 2px 9px;
             border-radius: 50px;
             margin-left: 5px;
-            display: inline-block; /* 確保它是區塊顯示 */
+            display: inline-block; 
             box-shadow: 0 4px 8px rgba(233, 85, 19, 0.3);
             line-height: 1.2;
         }
@@ -65,13 +65,70 @@
             text-align: center;
             box-shadow: 0 25px 50px rgba(233, 85, 19, 0.2);
         }
+
+        /* 📱 響應式排版 (手機與平板專屬) */
+        @media (max-width: 768px) {
+            /* 導覽列改為上下置中排列 */
+            .top-nav {
+                padding: 1rem !important; 
+                flex-direction: column !important; 
+                justify-content: center !important;
+                gap: 15px !important;
+            }
+            .top-nav a.navbar-brand h2 {
+                font-size: 1.8rem !important; 
+                text-align: center;
+                margin: 0 !important;
+            }
+            .top-nav > div {
+                width: 100%;
+                justify-content: center !important; 
+                gap: 15px !important; 
+                flex-wrap: wrap !important; 
+            }
+            .nav-link-custom {
+                font-size: 1.05rem !important; 
+            }
+
+            /* 首頁大圖區塊縮小 */
+            .hero-section {
+                padding: 80px 20px;
+            }
+            .hero-section h1 {
+                font-size: 2.5rem !important; /* 原本太大了，手機縮小 */
+            }
+            .hero-section p {
+                font-size: 1.2rem !important;
+            }
+            .hero-section .btn {
+                padding: 12px 30px !important;
+                font-size: 1.2rem !important;
+            }
+
+            /* 推薦橫幅縮小 */
+            .featured-banner {
+                padding: 50px 20px;
+                border-radius: 25px;
+                margin-top: 30px;
+            }
+            .featured-banner h2 {
+                font-size: 2rem !important;
+            }
+            .featured-banner p {
+                font-size: 1.1rem !important;
+            }
+            .featured-banner .btn {
+                padding: 10px 25px !important;
+                font-size: 1.2rem !important;
+            }
+        }
     </style>
 </head>
 
 <body class="frontend">
 
     <nav class="top-nav d-flex justify-content-between align-items-center sticky-top shadow-sm">
-        <a href="index.html" class="text-decoration-none">
+        <a href="index.html" class="text-decoration-none navbar-brand">
             <h2 class="mb-0 fw-bold" style="color: var(--theme-orange-deep);">🛍️ 活力購物網</h2>
         </a>
         <div class="d-flex gap-5 align-items-center"> 
@@ -81,7 +138,7 @@
             <a href="HTML/cart.html" class="nav-link-custom text-decoration-none text-dark fw-bold">
                 🛒 購物車 <span id="cart-count-badge" class="cart-badge">0</span>
             </a>
-            <a href="HTML/login.html" class="text-decoration-none text-muted small">管理入口</a>
+            <a href="HTML/login.html" class="nav-link-custom text-decoration-none text-muted small">管理入口</a>
         </div>
     </nav>
 
@@ -89,7 +146,7 @@
         <div class="container">
             <h1 class="display-2 fw-bold mb-4" style="color: var(--theme-orange-deep);">讓健康成為一種習慣</h1>
             <p class="fs-3 text-muted mb-5">專業研發、天然純淨，為您與家人的健康撐起防護傘</p>
-            <a href="HTML/products_all.html" class="btn btn-yanni btn-lg px-5 py-3 fs-3 shadow-lg">
+            <a href="HTML/products_all.html" class="btn btn-yanni btn-lg px-5 py-3 fs-3 shadow-lg" style="background-color: var(--theme-orange-deep); color: white; border-radius: 50px; font-weight: bold; border: none;">
                 🚀 立即選購
             </a>
         </div>
@@ -99,7 +156,7 @@
         <section class="featured-banner">
             <h2 class="display-4 fw-bold mb-3">熱銷精選推薦 🔥</h2>
             <p class="fs-3 mb-4">萬人見證的明星產品，限時優惠進行中</p>
-            <a href="HTML/products_all.html" class="btn btn-light text-orange fw-bold px-5 py-3 fs-4 rounded-pill shadow">
+            <a href="HTML/products_all.html" class="btn btn-light fw-bold px-5 py-3 fs-4 rounded-pill shadow" style="color: var(--theme-orange-deep);">
                 查看推薦商品
             </a>
         </section>

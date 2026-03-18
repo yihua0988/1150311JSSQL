@@ -9,13 +9,109 @@
     <style>
         .table-card {
             border-radius: 30px !important;
-            overflow: hidden;
+            background: #ffffff;
         }
+        
+        /* 🌟 表格標頭與內容：強制不換行，讓它自然左右滑動，不會擠斷文字 */
+        .table thead th, .table tbody td {
+            white-space: nowrap !important;
+            vertical-align: middle;
+        }
+        
         .table thead th {
             background-color: #f8f9fa;
             font-weight: 700;
             color: #666;
             padding: 1.2rem 1rem;
+        }
+
+        /* 🌟 永遠跟隨螢幕中央的懸浮追蹤層 */
+        .sticky-arrow-wrapper {
+            position: sticky;
+            top: 50vh; /* 永遠鎖定在螢幕高度 50% 的位置 */
+            z-index: 100;
+            width: 100%;
+            height: 0; /* 本身不佔據畫面空間 */
+            pointer-events: none; /* 讓點擊穿透，不會擋住滑動 */
+        }
+
+        /* 🌟 半透明毛玻璃箭頭樣式 */
+        .scroll-arrow {
+            display: none; /* 預設電腦版隱藏 */
+            position: absolute;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.85); /* 半透明白色 */
+            backdrop-filter: blur(5px); /* 高級毛玻璃特效 */
+            -webkit-backdrop-filter: blur(5px); /* 支援 iOS */
+            border: 1px solid rgba(233, 85, 19, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: var(--theme-orange-deep);
+            font-weight: 900;
+            font-size: 1.3rem;
+            text-align: center;
+            line-height: 38px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            pointer-events: auto; /* 恢復箭頭本身的點擊能力 */
+        }
+
+        /* 隱藏原生滾動條讓畫面更乾淨 */
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+        }
+
+        /* 📱 響應式排版 (平板尺寸調整) */
+        @media (max-width: 992px) {
+            .table-card {
+                padding: 1.5rem !important;
+                border-radius: 20px !important;
+            }
+        }
+
+        /* 📱 響應式排版 (手機尺寸壓縮) */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 1.5rem !important; 
+            }
+            .table-card {
+                padding: 1rem !important; 
+                border-radius: 15px !important;
+            }
+            .table thead th, .table tbody td {
+                padding: 0.8rem 0.5rem !important;
+                font-size: 0.95rem;
+            }
+            #searchInput {
+                max-width: 100% !important;
+                font-size: 0.95rem !important;
+                padding: 10px 15px !important;
+            }
+            .action-buttons {
+                width: 100%;
+                display: flex;
+                gap: 10px !important;
+            }
+            .action-buttons button {
+                flex: 1; 
+                padding: 8px !important;
+                font-size: 0.9rem !important;
+            }
+
+            /* 手機版顯示懸浮箭頭 */
+            .scroll-arrow {
+                display: block;
+            }
+            /* 微調箭頭位置，讓它完美貼著邊緣 */
+            .scroll-arrow-left { left: -5px; }
+            .scroll-arrow-right { right: -5px; }
         }
     </style>
 </head>
@@ -39,9 +135,9 @@
         </nav>
 
         <main class="main-content">
-            <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
-                <h1 class="page-title mb-0" id="page-title">客戶名單管理 👥</h1>
-                <div class="d-flex gap-3">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h1 class="page-title mb-0" id="page-title" style="font-weight: 900;">客戶名單管理 👥</h1>
+                <div class="action-buttons d-flex gap-3">
                     <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">＋ 新增客戶</button>
                     <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="toggleView()">🗑️ 客戶回收桶</button>
                 </div>
@@ -51,8 +147,14 @@
                 <input type="text" id="searchInput" class="form-control form-control-lg shadow-sm" placeholder="🔍 搜尋客戶姓名、電話或地址..." style="max-width: 500px; border-radius: 50px; padding-left: 20px;">
             </div>
 
-            <div class="card border-0 shadow-sm p-4 table-card">
-                <div class="table-responsive">
+            <div class="card border-0 shadow-sm p-4 table-card position-relative">
+                
+                <div class="sticky-arrow-wrapper">
+                    <div id="arrow-left" class="scroll-arrow scroll-arrow-left" onclick="scrollTable(-150)" style="opacity: 0; pointer-events: none;">❮</div>
+                    <div id="arrow-right" class="scroll-arrow scroll-arrow-right" onclick="scrollTable(150)">❯</div>
+                </div>
+
+                <div class="table-responsive" id="table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
@@ -68,14 +170,18 @@
                         </tbody>
                     </table>
                 </div>
+                
             </div>
         </main>
     </div>
 
     <div class="modal fade" id="addModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 25px; border: none;">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">📝 新增客戶資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content" style="border-radius: 20px; border: none;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">📝 新增客戶資料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body p-4">
                     <form id="addForm">
                         <div class="mb-3">
@@ -90,7 +196,7 @@
                             <label class="form-label fw-bold">收件地址</label>
                             <input type="text" id="in_address" class="form-control form-control-lg" required>
                         </div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm">確認新增</button>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">確認新增</button>
                     </form>
                 </div>
             </div>
@@ -99,8 +205,11 @@
 
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 25px; border: 3px solid var(--theme-orange-deep);">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">✏️ 修改客戶資訊</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content" style="border-radius: 20px; border: 3px solid var(--theme-orange-deep);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">✏️ 修改客戶資訊</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body p-4">
                     <form id="editForm">
                         <input type="hidden" id="edit_id">
@@ -116,7 +225,7 @@
                             <label class="form-label fw-bold">收件地址</label>
                             <input type="text" id="edit_address" class="form-control form-control-lg" required>
                         </div>
-                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm">✅ 儲存修改</button>
+                        <button type="submit" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">✅ 儲存修改</button>
                     </form>
                 </div>
             </div>
@@ -137,7 +246,46 @@
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
-        // 1. 抓取資料 (改用 business_phone)
+        // 🌟 懸浮箭頭邏輯
+        const tableContainer = document.getElementById('table-container');
+        const arrowLeft = document.getElementById('arrow-left');
+        const arrowRight = document.getElementById('arrow-right');
+
+        function updateArrows() {
+            if (tableContainer.scrollWidth <= tableContainer.clientWidth) {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+                return;
+            }
+
+            if (tableContainer.scrollLeft > 0) {
+                arrowLeft.style.opacity = '1';
+                arrowLeft.style.pointerEvents = 'auto';
+            } else {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+            }
+
+            if (Math.ceil(tableContainer.scrollLeft + tableContainer.clientWidth) >= tableContainer.scrollWidth) {
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+            } else {
+                arrowRight.style.opacity = '1';
+                arrowRight.style.pointerEvents = 'auto';
+            }
+        }
+
+        // 點擊箭頭滑動表格
+        function scrollTable(amount) {
+            tableContainer.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        tableContainer.addEventListener('scroll', updateArrows);
+        window.addEventListener('resize', updateArrows);
+
+        // 1. 抓取資料
         async function fetchCustomers() {
             try {
                 const { data, error } = await client
@@ -161,9 +309,9 @@
             tbody.innerHTML = list.map(c => `
                 <tr>
                     <td class="text-muted small">${c.id}</td>
-                    <td class="fw-bold fs-5" style="color: var(--theme-orange-deep);">${c.first_name || '---'}</td>
+                    <td class="fw-bold fs-6 fs-md-5" style="color: var(--theme-orange-deep);">${c.first_name || '---'}</td>
                     <td class="fw-bold text-dark">${c.business_phone || '---'}</td>
-                    <td class="text-muted">${c.address || '未提供地址'}</td>
+                    <td class="text-muted small" style="min-width: 150px;">${c.address || '未提供地址'}</td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-outline-dark fw-bold" onclick="openEditModal(${c.id})">✏️ 編輯</button>
@@ -173,7 +321,11 @@
                         </div>
                     </td>
                 </tr>`).join('');
+            
             if(list.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">目前名單是空的</td></tr>`;
+
+            // 資料渲染完畢後，檢查是否需要顯示箭頭
+            setTimeout(updateArrows, 100); 
         }
 
         // 3. 開啟編輯視窗並填入資料

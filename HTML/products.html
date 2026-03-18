@@ -7,34 +7,121 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     <style>
-        @media (max-width: 768px) {
-            .app-container { flex-direction: column; }
-            .sidebar {
-                position: relative !important;
-                width: 100% !important;
-                height: auto !important;
-                padding: 1rem !important;
-                flex-direction: row !important;
-                overflow-x: auto;
-                white-space: nowrap;
-                display: flex;
-                gap: 10px;
-            }
-            .sidebar h2, .sidebar hr, .sidebar small, .sidebar span { display: none !important; }
-            .nav-item {
-                display: inline-block !important;
-                padding: 0.6rem 1rem !important;
-                margin-bottom: 0 !important;
-                font-size: 0.9rem !important;
-            }
-            .main-content { margin-left: 0 !important; padding: 1.5rem !important; }
-            .page-title { font-size: 1.8rem !important; }
+        .product-table-card {
+            border-radius: 30px !important;
+            background: #ffffff;
+        }
+        
+        /* 🌟 表格標頭與內容：強制不換行，讓它自然左右滑動 */
+        .table thead th, .table tbody td {
+            white-space: nowrap !important;
+            vertical-align: middle;
         }
 
-        .product-table-card { border-radius: 30px !important; overflow: hidden; }
-        .table thead th { background-color: #f8f9fa; font-weight: 700; color: #666; padding: 1.2rem 1rem; }
-        .img-thumbnail-custom { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .preview-box { width: 120px; height: 120px; object-fit: cover; border-radius: 15px; border: 2px dashed #ddd; }
+        .table thead th {
+            background-color: #f8f9fa;
+            font-weight: 700;
+            color: #666;
+            padding: 1.2rem 1rem;
+        }
+
+        .img-thumbnail-custom {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .preview-box {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 15px;
+            border: 2px dashed #ddd;
+        }
+
+        /* 🌟 永遠跟隨螢幕中央的懸浮追蹤層 */
+        .sticky-arrow-wrapper {
+            position: sticky;
+            top: 50vh;
+            z-index: 100;
+            width: 100%;
+            height: 0;
+            pointer-events: none; 
+        }
+
+        /* 🌟 半透明毛玻璃箭頭樣式 */
+        .scroll-arrow {
+            display: none; 
+            position: absolute;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(5px); 
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(233, 85, 19, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: var(--theme-orange-deep);
+            font-weight: 900;
+            font-size: 1.3rem;
+            text-align: center;
+            line-height: 38px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            pointer-events: auto; 
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+        }
+
+        /* 📱 響應式排版 (平板尺寸調整) */
+        @media (max-width: 992px) {
+            .product-table-card {
+                padding: 1.5rem !important;
+                border-radius: 20px !important;
+            }
+        }
+
+        /* 📱 響應式排版 (手機尺寸壓縮) */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 1.5rem !important; 
+            }
+            .product-table-card {
+                padding: 1rem !important; 
+                border-radius: 15px !important;
+            }
+            .table thead th, .table tbody td {
+                padding: 0.8rem 0.5rem !important;
+                font-size: 0.95rem;
+            }
+            .action-buttons {
+                width: 100%;
+                display: flex;
+                gap: 10px !important;
+            }
+            .action-buttons button {
+                flex: 1; 
+                padding: 8px !important;
+                font-size: 0.9rem !important;
+            }
+
+            /* 手機版顯示懸浮箭頭 */
+            .scroll-arrow {
+                display: block;
+            }
+            .scroll-arrow-left { left: -5px; }
+            .scroll-arrow-right { right: -5px; }
+        }
     </style>
 </head>
 
@@ -59,16 +146,22 @@
         </nav>
 
         <main class="main-content">
-            <div class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
-                <h1 class="page-title mb-0" id="page-title">產品庫存管理 📦</h1>
-                <div class="d-flex gap-3">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h1 class="page-title mb-0" id="page-title" style="font-weight: 900;">產品庫存管理 📦</h1>
+                <div class="action-buttons d-flex gap-3">
                     <button class="btn btn-success px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">＋ 上架產品</button>
                     <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="toggleView()">🗑️ 產品回收桶</button>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm p-4 product-table-card">
-                <div class="table-responsive">
+            <div class="card border-0 shadow-sm p-4 product-table-card position-relative">
+                
+                <div class="sticky-arrow-wrapper">
+                    <div id="arrow-left" class="scroll-arrow scroll-arrow-left" onclick="scrollTable(-150)" style="opacity: 0; pointer-events: none;">❮</div>
+                    <div id="arrow-right" class="scroll-arrow scroll-arrow-right" onclick="scrollTable(150)">❯</div>
+                </div>
+
+                <div class="table-responsive" id="table-container">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
@@ -91,19 +184,22 @@
 
     <div class="modal fade" id="addModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 25px; border: none;">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">📦 新增產品資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content" style="border-radius: 20px; border: none;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">📦 新增產品資料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body p-4">
                     <form id="addForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-primary">上傳商品圖片</label>
+                        <div class="mb-3 text-center">
+                            <img id="add_img_preview" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E4%B8%8A%E5%82%B3%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E" alt="圖片預覽" class="preview-box mb-3 bg-light shadow-sm">
                             <input type="file" id="in_image" class="form-control" accept="image/*">
                         </div>
-                        <div class="mb-3"><label class="form-label">產品名稱</label><input type="text" id="in_name" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">產品編號</label><input type="text" id="in_code" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">定價</label><input type="number" id="in_price" class="form-control" step="0.01" required></div>
-                        <div class="mb-3"><label class="form-label">初始庫存量</label><input type="number" id="in_stock" class="form-control" required></div>
-                        <button type="submit" id="add-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">確認上架</button>
+                        <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="in_name" class="form-control form-control-lg" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold">產品編號</label><input type="text" id="in_code" class="form-control form-control-lg" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold">定價 (USD)</label><input type="number" id="in_price" class="form-control form-control-lg" step="0.01" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold">初始庫存量</label><input type="number" id="in_stock" class="form-control form-control-lg" required></div>
+                        <button type="submit" id="add-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">確認上架</button>
                     </form>
                 </div>
             </div>
@@ -112,8 +208,11 @@
 
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 25px; border: 3px solid var(--theme-orange-deep);">
-                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">✏️ 調整產品資料</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-content" style="border-radius: 20px; border: 3px solid var(--theme-orange-deep);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">✏️ 調整產品資料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body p-4">
                     <form id="editForm">
                         <input type="hidden" id="edit_id">
@@ -124,10 +223,10 @@
                             <small class="text-muted mt-1 d-block">💡 若不更換圖片，請留空即可</small>
                         </div>
 
-                        <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="edit_name" class="form-control bg-light" readonly></div>
+                        <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="edit_name" class="form-control form-control-lg bg-light" readonly></div>
                         <div class="mb-3"><label class="form-label fw-bold text-primary">調整定價 (USD)</label><input type="number" id="edit_price" class="form-control form-control-lg border-primary" step="0.01" required></div>
                         <div class="mb-3"><label class="form-label fw-bold text-success">調整庫存量</label><input type="number" id="edit_stock" class="form-control form-control-lg border-success" required></div>
-                        <button type="submit" id="edit-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold">✅ 儲存修改</button>
+                        <button type="submit" id="edit-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">✅ 儲存修改</button>
                     </form>
                 </div>
             </div>
@@ -147,6 +246,44 @@
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
+        // 🌟 懸浮箭頭邏輯
+        const tableContainer = document.getElementById('table-container');
+        const arrowLeft = document.getElementById('arrow-left');
+        const arrowRight = document.getElementById('arrow-right');
+
+        function updateArrows() {
+            if (tableContainer.scrollWidth <= tableContainer.clientWidth) {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+                return;
+            }
+
+            if (tableContainer.scrollLeft > 0) {
+                arrowLeft.style.opacity = '1';
+                arrowLeft.style.pointerEvents = 'auto';
+            } else {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+            }
+
+            if (Math.ceil(tableContainer.scrollLeft + tableContainer.clientWidth) >= tableContainer.scrollWidth) {
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+            } else {
+                arrowRight.style.opacity = '1';
+                arrowRight.style.pointerEvents = 'auto';
+            }
+        }
+
+        function scrollTable(amount) {
+            tableContainer.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        tableContainer.addEventListener('scroll', updateArrows);
+        window.addEventListener('resize', updateArrows);
+
         async function fetchProducts() {
             try {
                 const { data, error } = await client.from('products').select('*').eq('is_deleted', showDeleted).order('id', { ascending: false });
@@ -154,7 +291,7 @@
                 currentProducts = data;
                 render(data);
             } catch (err) {
-                document.getElementById('product-list').innerHTML = `<tr><td colspan="6" class="text-center text-danger">讀取失敗</td></tr>`;
+                document.getElementById('product-list').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-5">讀取失敗</td></tr>`;
             }
         }
 
@@ -168,9 +305,9 @@
                 return `
                 <tr>
                     <td>${imgTag}</td>
-                    <td class="fw-bold fs-5">${p.product_name}</td>
+                    <td class="fw-bold fs-6 fs-md-5">${p.product_name}</td>
                     <td><code class="text-muted">${p.product_code || '---'}</code></td>
-                    <td class="text-primary fw-bold fs-5">$${p.list_price}</td>
+                    <td class="text-primary fw-bold fs-6 fs-md-5">$${p.list_price}</td>
                     <td class="${p.reorder_level <= 0 ? 'text-danger fw-bold' : 'fw-bold'}">
                         ${p.reorder_level} ${p.reorder_level <= 0 ? '<span class="badge bg-danger ms-1">缺貨</span>' : ''}
                     </td>
@@ -178,35 +315,29 @@
                         <div class="btn-group">
                             <button class="btn btn-sm btn-outline-dark fw-bold" onclick="openEditModal(${p.id})">✏️ 編輯</button>
                             ${showDeleted 
-                                ? `<button class="btn btn-sm btn-outline-primary" onclick="updateStatus(${p.id}, false)">還原</button>` 
-                                : `<button class="btn btn-sm btn-outline-danger" onclick="updateStatus(${p.id}, true)">下架</button>`}
+                                ? `<button class="btn btn-sm btn-outline-primary fw-bold" onclick="updateStatus(${p.id}, false)">還原</button>` 
+                                : `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="updateStatus(${p.id}, true)">下架</button>`}
                         </div>
                     </td>
                 </tr>`;
             }).join('');
+            
             if(list.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">目前沒有商品</td></tr>`;
+            
+            setTimeout(updateArrows, 100);
         }
 
-        // 🌟 打開編輯視窗，並載入原有圖片預覽
-        function openEditModal(id) {
-            const p = currentProducts.find(item => item.id === id);
-            if (!p) return;
-            document.getElementById('edit_id').value = p.id;
-            document.getElementById('edit_name').value = p.product_name;
-            document.getElementById('edit_price').value = p.list_price;
-            document.getElementById('edit_stock').value = p.reorder_level;
-            
-            // 處理圖片預覽 (有圖顯示圖，沒圖給一個透明佔位符或預設圖案)
-            const previewImg = document.getElementById('edit_img_preview');
-            previewImg.src = p.image_url ? p.image_url : 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E7%84%A1%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E';
-            
-            // 清空檔案選擇器，避免上次選的檔案殘留
-            document.getElementById('edit_image').value = ''; 
-            
-            new bootstrap.Modal(document.getElementById('editModal')).show();
-        }
+        // 🌟 上傳圖片時即時預覽 (新增表單)
+        document.getElementById('in_image').addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) { document.getElementById('add_img_preview').src = e.target.result; }
+                reader.readAsDataURL(file);
+            }
+        });
 
-        // 🌟 當使用者選擇新圖片時，立刻更新預覽框
+        // 🌟 上傳圖片時即時預覽 (編輯表單)
         document.getElementById('edit_image').addEventListener('change', function(e) {
             const file = this.files[0];
             if (file) {
@@ -216,7 +347,22 @@
             }
         });
 
-        // 🌟 儲存編輯 (包含圖片上傳邏輯)
+        function openEditModal(id) {
+            const p = currentProducts.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('edit_id').value = p.id;
+            document.getElementById('edit_name').value = p.product_name;
+            document.getElementById('edit_price').value = p.list_price;
+            document.getElementById('edit_stock').value = p.reorder_level;
+            
+            const previewImg = document.getElementById('edit_img_preview');
+            previewImg.src = p.image_url ? p.image_url : 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E7%84%A1%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E';
+            
+            document.getElementById('edit_image').value = ''; 
+            
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -229,11 +375,9 @@
                 const fileInput = document.getElementById('edit_image');
                 const file = fileInput.files[0];
                 
-                // 找出該商品，保留它原本的圖片網址
                 const currentProduct = currentProducts.find(item => item.id == id);
                 let finalImageUrl = currentProduct.image_url;
 
-                // 如果有上傳新圖片，才執行 Supabase 儲存桶上傳
                 if (file) {
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}.${fileExt}`;
@@ -251,7 +395,6 @@
                     finalImageUrl = urlData.publicUrl;
                 }
 
-                // 更新資料庫 (包含價格、庫存與可能變動的圖片網址)
                 const { error } = await client.from('products').update({
                     list_price: parseFloat(document.getElementById('edit_price').value),
                     reorder_level: parseInt(document.getElementById('edit_stock').value),
@@ -270,7 +413,6 @@
             }
         });
 
-        // 下架/還原
         async function updateStatus(id, status) {
             const { error } = await client.from('products').update({ is_deleted: status }).eq('id', id);
             if (!error) fetchProducts();
@@ -282,7 +424,6 @@
             fetchProducts();
         }
 
-        // 新增商品
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('add-submit-btn');
@@ -315,7 +456,11 @@
                 if (insertErr) throw insertErr;
 
                 bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+                
+                // 恢復預設圖片和表單
+                document.getElementById('add_img_preview').src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E4%B8%8A%E5%82%B3%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E';
                 document.getElementById('addForm').reset();
+                
                 fetchProducts();
             } catch (err) {
                 alert('新增失敗：' + err.message);

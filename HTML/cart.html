@@ -39,8 +39,12 @@
         .card {
             border: none;
             border-radius: 24px;
-            overflow: hidden;
             background: #ffffff;
+        }
+
+        .table thead th, .table tbody td {
+            white-space: nowrap !important;
+            vertical-align: middle;
         }
 
         .table thead th {
@@ -48,6 +52,27 @@
             color: #888;
             font-weight: 600;
             padding: 1.5rem 1rem;
+        }
+
+        .cart-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain; 
+            border-radius: 12px;
+            background-color: #fdf5f2;
+            padding: 5px;
+            margin-right: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 🌟 桌機版商品名稱寬度 */
+        .product-name-cell {
+            max-width: 10em; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .btn-yanni {
@@ -74,6 +99,7 @@
             align-items: center;
             justify-content: center;
             transition: 0.2s;
+            font-weight: bold;
         }
         .btn-quantity:hover {
             border-color: var(--yanni-orange);
@@ -89,9 +115,78 @@
             background: #ffffff;
             border: 2px solid var(--yanni-orange);
         }
+
+        .sticky-arrow-wrapper {
+            position: sticky;
+            top: 50vh; 
+            z-index: 100;
+            width: 100%;
+            height: 0; 
+            pointer-events: none; 
+        }
+
+        .scroll-arrow {
+            display: none; 
+            position: absolute;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(5px); 
+            -webkit-backdrop-filter: blur(5px); 
+            border: 1px solid rgba(233, 85, 19, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: var(--theme-orange-deep);
+            font-weight: 900;
+            font-size: 1.3rem;
+            text-align: center;
+            line-height: 38px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            user-select: none;
+            pointer-events: auto; 
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+        }
+
+        /* 📱 響應式排版 (手機尺寸) */
+        @media (max-width: 768px) {
+            .table-card {
+                padding: 1rem !important; 
+                border-radius: 15px !important;
+            }
+            .table thead th, .table tbody td {
+                padding: 0.8rem 0.5rem !important;
+                font-size: 0.95rem;
+            }
+            .scroll-arrow {
+                display: block;
+            }
+            .scroll-arrow-left { left: -5px; }
+            .scroll-arrow-right { right: -5px; }
+            .cart-item-img {
+                width: 45px;
+                height: 45px;
+                margin-right: 10px;
+            }
+            .display-5 {
+                font-size: 2rem; 
+            }
+            /* 🌟 手機版縮得更短，改成你指定的 3.5em，並加 !important 強制生效 */
+            .product-name-cell {
+                max-width: 3.5em !important; 
+            }
+        }
     </style>
 </head>
-<body>
+<body class="frontend">
     <nav class="top-nav d-flex justify-content-between align-items-center">
         <a href="../index.html" class="text-decoration-none navbar-brand fs-3">🛍️ 活力購物網</a>
         <div class="d-flex gap-4 align-items-center">
@@ -102,20 +197,26 @@
     </nav>
 
     <div class="container pb-5">
-        <div class="cart-header d-flex justify-content-between align-items-end">
+        <div class="cart-header d-flex justify-content-between align-items-end flex-wrap gap-3">
             <div>
-                <h1 class="display-5">您的購物車</h1>
+                <h1 class="display-5 mb-2">您的購物車</h1>
                 <p class="text-muted mb-0">確認好商品，準備迎接美好生活！</p>
             </div>
-            <button onclick="clearCart()" class="btn btn-link text-muted text-decoration-none small">
+            <button onclick="clearCart()" class="btn btn-link text-muted text-decoration-none small p-0">
                 🗑️ 清空購物車
             </button>
         </div>
 
         <div class="row g-4">
             <div class="col-lg-8">
-                <div class="card shadow-sm p-2">
-                    <div class="table-responsive">
+                <div class="card table-card shadow-sm p-3 position-relative">
+                    
+                    <div class="sticky-arrow-wrapper">
+                        <div id="arrow-left" class="scroll-arrow scroll-arrow-left" onclick="scrollTable(-150)" style="opacity: 0; pointer-events: none;">❮</div>
+                        <div id="arrow-right" class="scroll-arrow scroll-arrow-right" onclick="scrollTable(150)">❯</div>
+                    </div>
+
+                    <div class="table-responsive" id="table-container">
                         <table class="table align-middle mb-0">
                             <thead>
                                 <tr>
@@ -123,10 +224,12 @@
                                     <th>單價</th>
                                     <th>數量</th>
                                     <th>小計</th>
-                                    <th></th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="cart-body"></tbody>
+                            <tbody id="cart-body">
+                                <tr><td colspan="5" class="text-center py-5 text-muted">正在載入購物車...</td></tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -148,7 +251,7 @@
                         <span class="fs-5 fw-bold">應付總額</span>
                         <span id="total-price" class="fs-3 price-text">$0.00</span>
                     </div>
-                    <a href="checkout.html" class="btn btn-yanni w-100 py-3 fs-5">
+                    <a href="checkout.html" id="checkout-btn" class="btn btn-yanni w-100 py-3 fs-5">
                         💳 前往結帳
                     </a>
                 </div>
@@ -159,61 +262,132 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="Sk2edwpokS.js"></script>
+
     <script>
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
         
-        // 設定固定運費金額
         const shippingFee = 60; 
 
-        function loadCart() {
+        const tableContainer = document.getElementById('table-container');
+        const arrowLeft = document.getElementById('arrow-left');
+        const arrowRight = document.getElementById('arrow-right');
+
+        function updateArrows() {
+            if (tableContainer.scrollWidth <= tableContainer.clientWidth) {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+                return;
+            }
+            if (tableContainer.scrollLeft > 0) {
+                arrowLeft.style.opacity = '1';
+                arrowLeft.style.pointerEvents = 'auto';
+            } else {
+                arrowLeft.style.opacity = '0';
+                arrowLeft.style.pointerEvents = 'none';
+            }
+            if (Math.ceil(tableContainer.scrollLeft + tableContainer.clientWidth) >= tableContainer.scrollWidth) {
+                arrowRight.style.opacity = '0';
+                arrowRight.style.pointerEvents = 'none';
+            } else {
+                arrowRight.style.opacity = '1';
+                arrowRight.style.pointerEvents = 'auto';
+            }
+        }
+
+        function scrollTable(amount) {
+            tableContainer.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        tableContainer.addEventListener('scroll', updateArrows);
+        window.addEventListener('resize', updateArrows);
+
+        async function loadCart() {
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             const tbody = document.getElementById('cart-body');
             const totalItemsEl = document.getElementById('total-items');
             const totalPriceEl = document.getElementById('total-price');
             const shippingFeeEl = document.getElementById('shipping-fee');
+            const checkoutBtn = document.getElementById('checkout-btn');
 
             tbody.innerHTML = "";
             let totalItems = 0;
             let productTotal = 0;
 
             if (cart.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">購物車是空的喔！<br><a href="../index.html" class="btn btn-yanni mt-3">去逛逛吧</a></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted border-0">購物車是空的喔！<br><a href="../index.html" class="btn btn-yanni mt-3">去逛逛吧</a></td></tr>`;
                 totalItemsEl.innerText = "0 件";
-                shippingFeeEl.innerText = "$0.00"; // 購物車為空時，運費為 0
+                shippingFeeEl.innerText = "$0.00"; 
                 totalPriceEl.innerText = "$0.00";
+                checkoutBtn.style.pointerEvents = 'none';
+                checkoutBtn.style.opacity = '0.5';
+                updateArrows();
                 return;
+            }
+
+            checkoutBtn.style.pointerEvents = 'auto';
+            checkoutBtn.style.opacity = '1';
+
+            let productImagesMap = {};
+            const productIds = cart.map(item => item.id);
+            
+            try {
+                const { data, error } = await client
+                    .from('products')
+                    .select('id, image_url')
+                    .in('id', productIds);
+                    
+                if (!error && data) {
+                    data.forEach(p => {
+                        productImagesMap[p.id] = p.image_url;
+                    });
+                }
+            } catch (err) {
+                console.error('抓取圖片失敗', err);
             }
 
             cart.forEach((item, index) => {
                 const subtotal = item.price * item.quantity;
                 totalItems += item.quantity;
                 productTotal += subtotal;
+                
+                const imageUrl = productImagesMap[item.id];
+                const imageHtml = imageUrl 
+                    ? `<img src="${imageUrl}" class="cart-item-img">` 
+                    : `<div class="cart-item-img d-flex align-items-center justify-content-center text-muted" style="font-size:0.8rem">無圖片</div>`;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td class="py-4">
-                            <div class="fw-bold fs-5">${item.name}</div>
+                        <td class="py-3">
+                            <div class="d-flex align-items-center">
+                                ${imageHtml}
+                                <div class="fw-bold fs-5 text-dark product-name-cell" title="${item.name}">${item.name}</div>
+                            </div>
                         </td>
                         <td class="text-muted">${formatter.format(item.price)}</td>
                         <td>
-                            <div class="d-flex align-items-center gap-3">
-                                <button onclick="changeQuantity(${index}, -1)" class="btn-quantity">-</button>
-                                <span class="fw-bold">${item.quantity}</span>
-                                <button onclick="changeQuantity(${index}, 1)" class="btn-quantity">+</button>
+                            <div class="d-flex align-items-center gap-2">
+                                <button onclick="changeQuantity(${index}, -1)" class="btn-quantity shadow-sm">-</button>
+                                <span class="fw-bold fs-5 px-2">${item.quantity}</span>
+                                <button onclick="changeQuantity(${index}, 1)" class="btn-quantity shadow-sm">+</button>
                             </div>
                         </td>
                         <td class="price-text fs-5">${formatter.format(subtotal)}</td>
                         <td>
-                            <button onclick="removeItem(${index})" class="btn btn-sm btn-link text-danger text-decoration-none">移除</button>
+                            <button onclick="removeItem(${index})" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3">移除</button>
                         </td>
                     </tr>`;
             });
 
             totalItemsEl.innerText = `${totalItems} 件`;
-            
-            // 購物車有商品時，顯示運費並計算總額（商品總額 + 運費）
             shippingFeeEl.innerText = formatter.format(shippingFee);
             totalPriceEl.innerText = formatter.format(productTotal + shippingFee);
+            
+            setTimeout(updateArrows, 100);
         }
 
         function changeQuantity(index, change) {
@@ -232,7 +406,9 @@
         }
 
         function clearCart() {
-            if (!confirm('確定要清空購物車嗎？')) return;
+            let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
+            if (cart.length === 0) return;
+            if (!confirm('確定要清空您的購物車嗎？')) return;
             localStorage.removeItem('northwind_cart');
             loadCart();
         }
