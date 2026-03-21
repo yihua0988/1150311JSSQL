@@ -38,12 +38,14 @@
         .status-completed { background-color: #55efc4; color: #00b894; }
         .status-cancelled { background-color: #ff7675; color: #d63031; }
 
+        /* 🌟 分類按鈕選中時的樣式 */
         .filter-btn-group .btn.active {
             background-color: var(--theme-orange-deep);
             color: white;
             border-color: var(--theme-orange-deep);
         }
 
+        /* 🌟 搜尋與篩選列排版 (解決手機版跑掉的問題) */
         .search-filter-container {
             display: flex;
             flex-wrap: wrap;
@@ -51,7 +53,7 @@
             align-items: center;
         }
         .search-bar {
-            flex: 1; 
+            flex: 1; /* 電腦版自動佔據空間 */
             min-width: 250px;
             max-width: 400px;
             border-radius: 50px;
@@ -59,14 +61,15 @@
         }
         .filter-scroll {
             max-width: 100%;
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch; 
-            padding-bottom: 5px; 
+            overflow-x: auto; /* 超出範圍允許左右滑動 */
+            -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */
+            padding-bottom: 5px; /* 避免陰影被切掉 */
         }
         .filter-btn-group {
             border-radius: 50px;
-            display: inline-flex; 
+            display: inline-flex; /* 確保按鈕永遠排成一列不換行 */
         }
+        /* 隱藏上方自訂滑動區的醜醜滾動條 */
         .filter-scroll::-webkit-scrollbar { display: none; }
 
         .sticky-arrow-wrapper {
@@ -116,6 +119,7 @@
             }
         }
 
+        /* 📱 響應式排版 (手機尺寸壓縮) */
         @media (max-width: 768px) {
             .page-title {
                 font-size: 1.5rem !important; 
@@ -133,13 +137,14 @@
             }
             .scroll-arrow-left { left: -5px; }
             .scroll-arrow-right { right: -5px; }
-            
+
+            /* 🌟 手機版搜尋列改為上下排列，解決無法點擊的問題 */
             .search-filter-container {
                 flex-direction: column; 
-                align-items: stretch; 
+                align-items: stretch; /* 讓子元素全部寬度 100% */
             }
             .search-bar {
-                max-width: 100% !important; 
+                max-width: 100% !important; /* 搜尋框滿版 */
             }
             .filter-scroll {
                 width: 100%; 
@@ -301,6 +306,7 @@
         });
         
         let allOrders = [];
+        
         let currentStatusFilter = 'all';
         let currentSearchQuery = '';
 
@@ -343,11 +349,13 @@
         tableContainer.addEventListener('scroll', updateArrows);
         window.addEventListener('resize', updateArrows);
 
+        // 監聽搜尋輸入框
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentSearchQuery = e.target.value.toLowerCase();
             applyFilters();
         });
 
+        // 監聽狀態篩選按鈕
         document.querySelectorAll('#statusFilters .btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('#statusFilters .btn').forEach(b => b.classList.remove('active'));
@@ -413,15 +421,10 @@
             }
 
             tbody.innerHTML = list.map(order => {
-                // 🌟 防呆補 'Z'：強制告訴瀏覽器資料庫傳來的是 UTC 標準時間
-                let dbDate = order.order_date;
-                if (!dbDate.endsWith('Z') && !dbDate.includes('+')) {
-                    dbDate += 'Z';
-                }
-                
-                const dateObj = new Date(dbDate);
+                // 🌟 直接將從 Supabase 收到的帶有時區標籤的字串，轉換成本地(台灣)時間
+                const dateObj = new Date(order.order_date);
                 const dateStr = dateObj.toLocaleString('zh-TW', { 
-                    timeZone: 'Asia/Taipei', // 確保轉換為台灣時間
+                    timeZone: 'UTC', 
                     year: 'numeric', 
                     month: '2-digit', 
                     day: '2-digit', 
