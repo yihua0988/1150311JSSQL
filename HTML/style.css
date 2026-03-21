@@ -274,3 +274,11 @@ body.backend {
         font-size: 1.8rem !important;
     }
 }
+/* 🌟 防止手機快速連點造成畫面放大，並提升點擊反應速度 */
+button, 
+input, 
+select, 
+textarea, 
+a {
+    touch-action: manipulation;
+}
