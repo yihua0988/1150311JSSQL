@@ -364,21 +364,24 @@
                     customerId = newCust[0].id;
                 }
 
-                // 2. 建立主訂單
-                const { data: newOrder, error: orderErr } = await client
-                    .from('orders')
-                    .insert([{ 
-                        customer_id: customerId, 
-                        order_date: new Date().toISOString(),
-                        total_amount: totalAmount,
-                        payment_method: paymentMethod,
-                        status: '待處理',
-                        delivery_time: deliveryTime,
-                        invoice_type: invoiceType,
-                        invoice_detail: invoiceDetail,
-                        order_remarks: orderRemarks
-                    }])
-                    .select();
+				// 🌟 產生精準的台灣時間字串 (YYYY-MM-DD HH:mm:ss)
+				const twTime = new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
+
+				// 2. 建立主訂單
+				const { data: newOrder, error: orderErr } = await client
+					.from('orders')
+					.insert([{ 
+						customer_id: customerId, 
+						order_date: twTime, // 👈 直接塞入台灣時間！
+						total_amount: totalAmount,
+						payment_method: paymentMethod,
+						status: '待處理',
+						delivery_time: deliveryTime,
+						invoice_type: invoiceType,
+						invoice_detail: invoiceDetail,
+						order_remarks: orderRemarks
+					}])
+					.select();
 
                 if (orderErr) throw orderErr;
                 const orderId = newOrder[0].id;
