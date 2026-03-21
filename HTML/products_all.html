@@ -54,6 +54,7 @@
             box-shadow: 0 0 0 3px rgba(233, 85, 19, 0.3) !important;
         }
         
+        /* 🌟 圖片區域修正 */
         .img-placeholder {
             height: 200px;
             background-color: #ffffff; 
@@ -152,6 +153,7 @@
             font-size: 1rem;
         }
 
+        /* 📱 響應式排版 (平板與手機) */
         @media (max-width: 768px) {
             .img-placeholder { height: 180px; }
             .qty-input-group { max-width: 120px; }
@@ -165,6 +167,11 @@
                 justify-content: center;
                 padding: 12px 20px;
             }
+        }
+
+        /* 🌟 終極防禦：防止手機快速連點造成畫面放大，並提升點擊反應速度 */
+        button, input, select, textarea, a, .btn-qty, .floating-cart-btn {
+            touch-action: manipulation;
         }
     </style>
 </head>
@@ -220,7 +227,6 @@
             maximumFractionDigits: 0 
         });
         
-        // 🌟 用來記錄目前畫面上每個商品被選了幾個
         let pendingCart = {}; 
         let globalProducts = [];
 
@@ -235,12 +241,10 @@
             }
         }
         
-        // 🌟 更新懸浮按鈕的狀態
         function updateFloatingBtn() {
             const btn = document.getElementById('floating-cart-btn');
             const qtyBadge = document.getElementById('floating-qty');
             
-            // 計算 pendingCart 裡面的總數量
             let totalPending = 0;
             for (let id in pendingCart) {
                 totalPending += pendingCart[id].quantity;
@@ -248,7 +252,6 @@
             
             qtyBadge.innerText = `${totalPending} 件`;
             
-            // 如果有選東西，就顯示按鈕；沒有就隱藏
             if (totalPending > 0) {
                 btn.classList.add('show');
             } else {
@@ -317,16 +320,13 @@
             }
         }
 
-        // 🌟 改變數量並記錄到暫存區
         function changeQtyUI(id, delta, maxStock) {
             const input = document.getElementById(`qty-${id}`);
             const card = document.getElementById(`card-${id}`);
             let val = parseInt(input.value) + delta;
             
-            // 不能小於 0
             if (val < 0) val = 0;
             
-            // 檢查是否超過庫存
             if (val > maxStock) {
                 val = maxStock;
                 alert(`已經達到目前庫存上限 (${maxStock} 件) 囉！`);
@@ -334,33 +334,26 @@
             
             input.value = val;
             
-            // 如果數量大於 0，把卡片加個發光框框
             if (val > 0) {
                 card.classList.add('selected');
-                // 記錄到準備結帳的群組裡
                 pendingCart[id] = { quantity: val };
             } else {
                 card.classList.remove('selected');
-                // 數量變 0 就從群組裡拿掉
                 delete pendingCart[id];
             }
             
-            // 更新右下角按鈕狀態
             updateFloatingBtn();
         }
 
-        // 🌟 批次加入購物車 (右下角按鈕的魔法)
         function addAllToCart() {
             let cart = JSON.parse(localStorage.getItem('northwind_cart')) || [];
             let addedCount = 0;
             let errorMessages = [];
 
-            // 遍歷所有準備購買的商品
             for (let id in pendingCart) {
                 const productId = parseInt(id);
                 const quantityToAdd = pendingCart[id].quantity;
                 
-                // 從 globalProducts 找這個商品的詳細資訊
                 const productInfo = globalProducts.find(p => p.id === productId);
                 if (!productInfo) continue;
 
@@ -368,13 +361,11 @@
                 const foundInCart = cart.find(item => item.id === productId);
                 const currentCartQty = foundInCart ? foundInCart.quantity : 0;
                 
-                // 檢查加上購物車原本的數量，會不會爆庫存
                 if (currentCartQty + quantityToAdd > maxStock) {
                     errorMessages.push(`「${productInfo.product_name}」庫存不足 (剩餘 ${maxStock} 件，您購物車內已有 ${currentCartQty} 件)`);
-                    continue; // 跳過這個商品，處理下一個
+                    continue; 
                 }
                 
-                // 真正加進購物車
                 if (foundInCart) {
                     foundInCart.quantity += quantityToAdd;
                 } else {
@@ -387,22 +378,18 @@
                 }
                 addedCount += quantityToAdd;
                 
-                // 加完後把畫面上的數字歸零
                 const input = document.getElementById(`qty-${productId}`);
                 if(input) input.value = 0;
                 const card = document.getElementById(`card-${productId}`);
                 if(card) card.classList.remove('selected');
             }
             
-            // 存回 localStorage
             localStorage.setItem('northwind_cart', JSON.stringify(cart));
             
-            // 清空暫存區並更新 UI
             pendingCart = {};
             updateCartBadge();
             updateFloatingBtn();
             
-            // 跳出結果通知
             if (errorMessages.length > 0) {
                 alert(`部分商品無法加入：\n` + errorMessages.join('\n') + `\n\n其餘商品已成功加入購物車！`);
             } else if (addedCount > 0) {
