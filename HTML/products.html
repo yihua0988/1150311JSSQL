@@ -41,6 +41,16 @@
             border: 2px dashed #ddd;
         }
 
+        /* 🌟 隱藏數字輸入框原生醜醜的上下小箭頭 */
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         /* 🌟 永遠跟隨螢幕中央的懸浮追蹤層 */
         .sticky-arrow-wrapper {
             position: sticky;
@@ -168,7 +178,7 @@
                                 <th>圖片</th>
                                 <th>產品名稱</th>
                                 <th>產品編號</th>
-                                <th>定價 (USD)</th>
+                                <th>定價 (NT$)</th> 
                                 <th>庫存量</th>
                                 <th>操作</th>
                             </tr>
@@ -197,9 +207,18 @@
                         </div>
                         <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="in_name" class="form-control form-control-lg" required></div>
                         <div class="mb-3"><label class="form-label fw-bold">產品編號</label><input type="text" id="in_code" class="form-control form-control-lg" required></div>
-                        <div class="mb-3"><label class="form-label fw-bold">定價 (USD)</label><input type="number" id="in_price" class="form-control form-control-lg" step="0.01" required></div>
-                        <div class="mb-3"><label class="form-label fw-bold">初始庫存量</label><input type="number" id="in_stock" class="form-control form-control-lg" required></div>
-                        <button type="submit" id="add-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">確認上架</button>
+                        <div class="mb-3"><label class="form-label fw-bold">定價 (NT$)</label><input type="number" id="in_price" class="form-control form-control-lg" step="1" required></div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">初始庫存量</label>
+                            <div class="input-group input-group-lg">
+                                <button class="btn btn-outline-secondary px-3 fw-bold" type="button" onclick="adjustStock('in_stock', -1)">-</button>
+                                <input type="number" id="in_stock" class="form-control text-center fw-bold" value="0" min="0" required>
+                                <button class="btn btn-outline-secondary px-3 fw-bold" type="button" onclick="adjustStock('in_stock', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="add-submit-btn" class="btn btn-success w-100 py-3 mt-4 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">確認上架</button>
                     </form>
                 </div>
             </div>
@@ -224,9 +243,18 @@
                         </div>
 
                         <div class="mb-3"><label class="form-label fw-bold">產品名稱</label><input type="text" id="edit_name" class="form-control form-control-lg bg-light" readonly></div>
-                        <div class="mb-3"><label class="form-label fw-bold text-primary">調整定價 (USD)</label><input type="number" id="edit_price" class="form-control form-control-lg border-primary" step="0.01" required></div>
-                        <div class="mb-3"><label class="form-label fw-bold text-success">調整庫存量</label><input type="number" id="edit_stock" class="form-control form-control-lg border-success" required></div>
-                        <button type="submit" id="edit-submit-btn" class="btn btn-success w-100 py-3 mt-3 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">✅ 儲存修改</button>
+                        <div class="mb-3"><label class="form-label fw-bold text-primary">調整定價 (NT$)</label><input type="number" id="edit_price" class="form-control form-control-lg border-primary" step="1" required></div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-success">調整庫存量</label>
+                            <div class="input-group input-group-lg">
+                                <button class="btn btn-outline-success px-3 fw-bold" type="button" onclick="adjustStock('edit_stock', -1)">-</button>
+                                <input type="number" id="edit_stock" class="form-control border-success text-center fw-bold" min="0" required>
+                                <button class="btn btn-outline-success px-3 fw-bold" type="button" onclick="adjustStock('edit_stock', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="edit-submit-btn" class="btn btn-success w-100 py-3 mt-4 fs-5 fw-bold shadow-sm" style="border-radius: 50px;">✅ 儲存修改</button>
                     </form>
                 </div>
             </div>
@@ -239,6 +267,14 @@
 
     <script>
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // 新台幣格式化器 (去掉小數點)
+        const twdFormatter = new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD',
+            maximumFractionDigits: 0 
+        });
+
         let showDeleted = false;
         let currentProducts = [];
 
@@ -246,7 +282,6 @@
         if (!adminData) window.location.href = 'login.html';
         else document.getElementById('admin-display-name').innerText = JSON.parse(adminData).username;
 
-        // 🌟 懸浮箭頭邏輯
         const tableContainer = document.getElementById('table-container');
         const arrowLeft = document.getElementById('arrow-left');
         const arrowRight = document.getElementById('arrow-right');
@@ -284,6 +319,20 @@
         tableContainer.addEventListener('scroll', updateArrows);
         window.addEventListener('resize', updateArrows);
 
+        // 🌟 庫存加減按鈕的處理函數
+        function adjustStock(inputId, delta) {
+            const input = document.getElementById(inputId);
+            let currentVal = parseInt(input.value) || 0;
+            let newVal = currentVal + delta;
+            
+            // 防呆：庫存不能變成負數
+            if (newVal < 0) {
+                newVal = 0;
+            }
+            
+            input.value = newVal;
+        }
+
         async function fetchProducts() {
             try {
                 const { data, error } = await client.from('products').select('*').eq('is_deleted', showDeleted).order('id', { ascending: false });
@@ -307,7 +356,7 @@
                     <td>${imgTag}</td>
                     <td class="fw-bold fs-6 fs-md-5">${p.product_name}</td>
                     <td><code class="text-muted">${p.product_code || '---'}</code></td>
-                    <td class="text-primary fw-bold fs-6 fs-md-5">$${p.list_price}</td>
+                    <td class="text-primary fw-bold fs-6 fs-md-5">${twdFormatter.format(p.list_price)}</td>
                     <td class="${p.reorder_level <= 0 ? 'text-danger fw-bold' : 'fw-bold'}">
                         ${p.reorder_level} ${p.reorder_level <= 0 ? '<span class="badge bg-danger ms-1">缺貨</span>' : ''}
                     </td>
@@ -327,7 +376,6 @@
             setTimeout(updateArrows, 100);
         }
 
-        // 🌟 上傳圖片時即時預覽 (新增表單)
         document.getElementById('in_image').addEventListener('change', function(e) {
             const file = this.files[0];
             if (file) {
@@ -337,7 +385,6 @@
             }
         });
 
-        // 🌟 上傳圖片時即時預覽 (編輯表單)
         document.getElementById('edit_image').addEventListener('change', function(e) {
             const file = this.files[0];
             if (file) {
@@ -457,7 +504,6 @@
 
                 bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
                 
-                // 恢復預設圖片和表單
                 document.getElementById('add_img_preview').src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20fill%3D%22%23f8f9fa%22%20width%3D%22120%22%20height%3D%22120%22%2F%3E%3Ctext%20fill%3D%22%23aaa%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-size%3D%2214%22%3E%E4%B8%8A%E5%82%B3%E5%9C%96%E7%89%87%3C%2Ftext%3E%3C%2Fsvg%3E';
                 document.getElementById('addForm').reset();
                 

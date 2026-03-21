@@ -190,16 +190,16 @@
                     <div class="px-2">
                         <div class="d-flex justify-content-between mb-2 text-muted">
                             <span>商品小計</span>
-                            <span id="summary-subtotal">$0.00</span>
+                            <span id="summary-subtotal">$0</span>
                         </div>
                         <div class="d-flex justify-content-between mb-3 text-muted">
                             <span>運費</span>
-                            <span>$60.00</span>
+                            <span id="summary-shipping-fee">$0</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="fs-5 fw-bold">總應付金額</span>
-                            <span id="summary-total" class="fs-2 fw-bold" style="color: var(--yanni-orange);">$0.00</span>
+                            <span id="summary-total" class="fs-2 fw-bold" style="color: var(--yanni-orange);">$0</span>
                         </div>
                     </div>
                 </div>
@@ -215,7 +215,13 @@
     <script src="Sk2edwpokS.js"></script>
 
     <script>
-        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        // 🌟 新增：新台幣格式化器 (去掉小數點)
+        const twdFormatter = new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD',
+            maximumFractionDigits: 0 
+        });
+
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // 切換發票輸入框顯示狀態
@@ -257,6 +263,7 @@
             const container = document.getElementById('order-items-container');
             const subtotalEl = document.getElementById('summary-subtotal');
             const totalEl = document.getElementById('summary-total');
+            const shippingFeeEl = document.getElementById('summary-shipping-fee'); // 抓取運費元素
 
             if (cart.length === 0) {
                 alert("🛒 您的購物車是空的！");
@@ -274,16 +281,18 @@
                     <div class="order-item d-flex justify-content-between align-items-center">
                         <div>
                             <div class="fw-bold text-dark fs-5">${item.name}</div>
-                            <small class="text-muted">${formatter.format(item.price)} x ${item.quantity}</small>
+                            <small class="text-muted">${twdFormatter.format(item.price)} x ${item.quantity}</small>
                         </div>
-                        <div class="price-text fs-5">${formatter.format(itemTotal)}</div>
+                        <div class="price-text fs-5">${twdFormatter.format(itemTotal)}</div>
                     </div>
                 `;
             });
 
             const shippingFee = 60;
-            subtotalEl.innerText = formatter.format(subtotal);
-            totalEl.innerText = formatter.format(subtotal + shippingFee);
+            // 🌟 使用 twdFormatter 顯示整數金額
+            subtotalEl.innerText = twdFormatter.format(subtotal);
+            shippingFeeEl.innerText = twdFormatter.format(shippingFee);
+            totalEl.innerText = twdFormatter.format(subtotal + shippingFee);
             
             updateCartBadge();
         }
@@ -300,7 +309,6 @@
             const address = document.getElementById('cust_address').value;
             const paymentMethod = document.getElementById('payment-method').value;
             
-            // 🌟 抓取新增的欄位資料
             const deliveryTime = document.getElementById('delivery-time').value;
             const invoiceType = document.querySelector('input[name="invoiceType"]:checked').value;
             const invoiceDetail = document.getElementById('invoice-detail').value;
@@ -340,7 +348,7 @@
                     customerId = newCust[0].id;
                 }
 
-                // 2. 建立主訂單 (寫入新增的欄位)
+                // 2. 建立主訂單
                 const { data: newOrder, error: orderErr } = await client
                     .from('orders')
                     .insert([{ 
@@ -349,7 +357,6 @@
                         total_amount: totalAmount,
                         payment_method: paymentMethod,
                         status: '待處理',
-                        // 🌟 將新資料寫入 Supabase
                         delivery_time: deliveryTime,
                         invoice_type: invoiceType,
                         invoice_detail: invoiceDetail,

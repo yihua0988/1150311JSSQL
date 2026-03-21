@@ -12,7 +12,6 @@
             background: #ffffff;
         }
         
-        /* 🌟 表格標頭與內容：強制不換行，保持排版漂亮，讓它自然左右滑動 */
         .table thead th, .table tbody td {
             white-space: nowrap !important;
             vertical-align: middle;
@@ -25,14 +24,13 @@
             padding: 1.2rem 1rem;
         }
 
-        /* 🌟 狀態標籤美化：確保是區塊且不換行 */
         .status-badge {
             font-size: 0.9rem;
             padding: 8px 15px;
             border-radius: 50px;
             font-weight: bold;
-            display: inline-block; /* 確保維持膠囊狀 */
-            white-space: nowrap; /* 絕對不換行 */
+            display: inline-block; 
+            white-space: nowrap; 
             text-align: center;
         }
         .status-pending { background-color: #ffeaa7; color: #d35400; }
@@ -40,7 +38,40 @@
         .status-completed { background-color: #55efc4; color: #00b894; }
         .status-cancelled { background-color: #ff7675; color: #d63031; }
 
-        /* 🌟 永遠跟隨螢幕中央的懸浮追蹤層 */
+        /* 🌟 分類按鈕選中時的樣式 */
+        .filter-btn-group .btn.active {
+            background-color: var(--theme-orange-deep);
+            color: white;
+            border-color: var(--theme-orange-deep);
+        }
+
+        /* 🌟 搜尋與篩選列排版 (解決手機版跑掉的問題) */
+        .search-filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .search-bar {
+            flex: 1; /* 電腦版自動佔據空間 */
+            min-width: 250px;
+            max-width: 400px;
+            border-radius: 50px;
+            padding-left: 20px;
+        }
+        .filter-scroll {
+            max-width: 100%;
+            overflow-x: auto; /* 超出範圍允許左右滑動 */
+            -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */
+            padding-bottom: 5px; /* 避免陰影被切掉 */
+        }
+        .filter-btn-group {
+            border-radius: 50px;
+            display: inline-flex; /* 確保按鈕永遠排成一列不換行 */
+        }
+        /* 隱藏上方自訂滑動區的醜醜滾動條 */
+        .filter-scroll::-webkit-scrollbar { display: none; }
+
         .sticky-arrow-wrapper {
             position: sticky;
             top: 50vh;
@@ -50,7 +81,6 @@
             pointer-events: none; 
         }
 
-        /* 🌟 半透明毛玻璃箭頭樣式 */
         .scroll-arrow {
             display: none; 
             position: absolute;
@@ -82,7 +112,6 @@
             border-radius: 10px;
         }
 
-        /* 📱 響應式排版 (平板尺寸調整) */
         @media (max-width: 992px) {
             .table-card {
                 padding: 1.5rem !important;
@@ -108,6 +137,18 @@
             }
             .scroll-arrow-left { left: -5px; }
             .scroll-arrow-right { right: -5px; }
+
+            /* 🌟 手機版搜尋列改為上下排列，解決無法點擊的問題 */
+            .search-filter-container {
+                flex-direction: column; 
+                align-items: stretch; /* 讓子元素全部寬度 100% */
+            }
+            .search-bar {
+                max-width: 100% !important; /* 搜尋框滿版 */
+            }
+            .filter-scroll {
+                width: 100%; 
+            }
         }
     </style>
 </head>
@@ -134,6 +175,20 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <h1 class="page-title mb-0" style="font-weight: 900;">訂單管理系統 📋</h1>
                 <button class="btn btn-outline-dark fw-bold bg-white shadow-sm" onclick="fetchOrders()">🔄 重新整理</button>
+            </div>
+
+            <div class="search-filter-container mb-4">
+                <input type="text" id="searchInput" class="form-control form-control-lg shadow-sm search-bar" placeholder="🔍 搜尋訂單編號、姓名或電話...">
+                
+                <div class="filter-scroll">
+                    <div class="btn-group filter-btn-group shadow-sm bg-white" role="group" id="statusFilters">
+                        <button type="button" class="btn btn-outline-dark fw-bold active" data-status="all">全部訂單</button>
+                        <button type="button" class="btn btn-outline-dark fw-bold" data-status="待處理">🟡 待處理</button>
+                        <button type="button" class="btn btn-outline-dark fw-bold" data-status="已出貨">🚚 已出貨</button>
+                        <button type="button" class="btn btn-outline-dark fw-bold" data-status="已完成">✅ 已完成</button>
+                        <button type="button" class="btn btn-outline-dark fw-bold" data-status="已取消">❌ 已取消</button>
+                    </div>
+                </div>
             </div>
 
             <div class="card border-0 shadow-sm p-4 table-card position-relative">
@@ -243,8 +298,17 @@
 
     <script>
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        
+        const formatter = new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD',
+            maximumFractionDigits: 0 
+        });
+        
         let allOrders = [];
+        
+        let currentStatusFilter = 'all';
+        let currentSearchQuery = '';
 
         const adminData = localStorage.getItem('admin_user');
         if (!adminData) window.location.href = 'login.html';
@@ -262,7 +326,6 @@
                 arrowRight.style.pointerEvents = 'none';
                 return;
             }
-
             if (tableContainer.scrollLeft > 0) {
                 arrowLeft.style.opacity = '1';
                 arrowLeft.style.pointerEvents = 'auto';
@@ -270,7 +333,6 @@
                 arrowLeft.style.opacity = '0';
                 arrowLeft.style.pointerEvents = 'none';
             }
-
             if (Math.ceil(tableContainer.scrollLeft + tableContainer.clientWidth) >= tableContainer.scrollWidth) {
                 arrowRight.style.opacity = '0';
                 arrowRight.style.pointerEvents = 'none';
@@ -286,6 +348,23 @@
 
         tableContainer.addEventListener('scroll', updateArrows);
         window.addEventListener('resize', updateArrows);
+
+        // 監聽搜尋輸入框
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.toLowerCase();
+            applyFilters();
+        });
+
+        // 監聽狀態篩選按鈕
+        document.querySelectorAll('#statusFilters .btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('#statusFilters .btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                currentStatusFilter = e.target.getAttribute('data-status');
+                applyFilters();
+            });
+        });
 
         async function fetchOrders() {
             try {
@@ -307,23 +386,52 @@
 
                 if (error) throw error;
                 allOrders = data;
-                renderOrders(data);
+                applyFilters();
             } catch (err) {
                 console.error("載入訂單失敗:", err);
                 document.getElementById('order-list').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-5">讀取失敗：${err.message}</td></tr>`;
             }
         }
 
+        function applyFilters() {
+            let filteredOrders = allOrders;
+
+            if (currentStatusFilter !== 'all') {
+                filteredOrders = filteredOrders.filter(o => o.status === currentStatusFilter);
+            }
+
+            if (currentSearchQuery) {
+                filteredOrders = filteredOrders.filter(o => {
+                    const idStr = String(o.id);
+                    const name = (o.customers?.first_name || '').toLowerCase();
+                    const phone = (o.customers?.business_phone || '').toLowerCase();
+                    return idStr.includes(currentSearchQuery) || 
+                           name.includes(currentSearchQuery) || 
+                           phone.includes(currentSearchQuery);
+                });
+            }
+
+            renderOrders(filteredOrders);
+        }
+
         function renderOrders(list) {
             const tbody = document.getElementById('order-list');
             if(list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">目前沒有任何訂單</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">目前沒有符合條件的訂單</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = list.map(order => {
                 const dateObj = new Date(order.order_date);
-                const dateStr = dateObj.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+                const dateStr = dateObj.toLocaleString('zh-TW', { 
+                    timeZone: 'Asia/Taipei', 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
+                });
                 
                 const custName = order.customers ? order.customers.first_name : '未知客戶';
                 const custPhone = order.customers ? order.customers.business_phone : '無電話';
@@ -424,7 +532,7 @@
                 tbody.innerHTML += `
                     <tr class="table-light text-muted">
                         <td colspan="3" class="text-end">物流運費</td>
-                        <td class="text-end fw-bold">$60.00</td>
+                        <td class="text-end fw-bold">${formatter.format(60)}</td>
                     </tr>
                 `;
 
@@ -450,7 +558,7 @@
                 if (error) throw error;
                 
                 bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
-                fetchOrders();
+                fetchOrders(); 
             } catch (err) {
                 alert("更新狀態失敗：" + err.message);
             }

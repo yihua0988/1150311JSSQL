@@ -179,7 +179,6 @@
             .display-5 {
                 font-size: 2rem; 
             }
-            /* 🌟 手機版縮得更短，改成你指定的 3.5em，並加 !important 強制生效 */
             .product-name-cell {
                 max-width: 3.5em !important; 
             }
@@ -244,12 +243,12 @@
                     </div>
                     <div class="d-flex justify-content-between mb-4">
                         <span class="text-muted">運費</span>
-                        <span id="shipping-fee" class="text-success fw-bold">$0.00</span>
+                        <span id="shipping-fee" class="text-success fw-bold">$0</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between mb-4 mt-2">
                         <span class="fs-5 fw-bold">應付總額</span>
-                        <span id="total-price" class="fs-3 price-text">$0.00</span>
+                        <span id="total-price" class="fs-3 price-text">$0</span>
                     </div>
                     <a href="checkout.html" id="checkout-btn" class="btn btn-yanni w-100 py-3 fs-5">
                         💳 前往結帳
@@ -267,7 +266,13 @@
 
     <script>
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        
+        // 🌟 新增：新台幣格式化器 (去掉小數點)
+        const twdFormatter = new Intl.NumberFormat('zh-TW', { 
+            style: 'currency', 
+            currency: 'TWD',
+            maximumFractionDigits: 0 
+        });
         
         const shippingFee = 60; 
 
@@ -321,8 +326,8 @@
             if (cart.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted border-0">購物車是空的喔！<br><a href="../index.html" class="btn btn-yanni mt-3">去逛逛吧</a></td></tr>`;
                 totalItemsEl.innerText = "0 件";
-                shippingFeeEl.innerText = "$0.00"; 
-                totalPriceEl.innerText = "$0.00";
+                shippingFeeEl.innerText = "$0"; 
+                totalPriceEl.innerText = "$0";
                 checkoutBtn.style.pointerEvents = 'none';
                 checkoutBtn.style.opacity = '0.5';
                 updateArrows();
@@ -368,7 +373,7 @@
                                 <div class="fw-bold fs-5 text-dark product-name-cell" title="${item.name}">${item.name}</div>
                             </div>
                         </td>
-                        <td class="text-muted">${formatter.format(item.price)}</td>
+                        <td class="text-muted">${twdFormatter.format(item.price)}</td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <button onclick="changeQuantity(${index}, -1)" class="btn-quantity shadow-sm">-</button>
@@ -376,7 +381,7 @@
                                 <button onclick="changeQuantity(${index}, 1)" class="btn-quantity shadow-sm">+</button>
                             </div>
                         </td>
-                        <td class="price-text fs-5">${formatter.format(subtotal)}</td>
+                        <td class="price-text fs-5">${twdFormatter.format(subtotal)}</td>
                         <td>
                             <button onclick="removeItem(${index})" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3">移除</button>
                         </td>
@@ -384,8 +389,8 @@
             });
 
             totalItemsEl.innerText = `${totalItems} 件`;
-            shippingFeeEl.innerText = formatter.format(shippingFee);
-            totalPriceEl.innerText = formatter.format(productTotal + shippingFee);
+            shippingFeeEl.innerText = twdFormatter.format(shippingFee);
+            totalPriceEl.innerText = twdFormatter.format(productTotal + shippingFee);
             
             setTimeout(updateArrows, 100);
         }
