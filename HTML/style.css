@@ -274,3 +274,36 @@ body.backend {
         font-size: 1.8rem !important;
     }
 }
+/* =========================================
+   🌟 全站防護警告橫幅 (自動套用到所有頁面)
+   ========================================= */
+body::after {
+    content: "⚠️ 2026洪益華動態網頁實作測試 - 非正式網站請勿留真實個資 ⚠️";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(220, 53, 69, 0.95); /* 醒目的紅色，帶一點點透明度 */
+    color: #ffffff;
+    text-align: center;
+    padding: 10px 15px;
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    z-index: 10000; /* 確保永遠在最上層，不會被其他東西蓋住 */
+    pointer-events: none; /* 💡 魔法屬性：讓滑鼠可以穿透它，絕對不會擋住底下的按鈕！ */
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+}
+
+/* 確保網頁滑到最底時，頁尾內容不會被這條警告擋住 */
+body {
+    padding-bottom: 45px !important;
+}
+
+/* 如果手機螢幕太小，把字體稍微縮小一點避免破版 */
+@media (max-width: 768px) {
+    body::after {
+        font-size: 0.85rem;
+        padding: 8px 10px;
+    }
+}
