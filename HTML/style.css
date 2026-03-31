@@ -24,6 +24,47 @@ body {
 }
 
 /* =========================================
+   🌟 全站防護警告橫幅 (自動套用到所有頁面)
+   ========================================= */
+body::after {
+    content: "⚠️ 2026洪益華動態網頁實作測試 - 非正式網站請勿留真實個資 ⚠️";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(220, 53, 69, 0.95); /* 醒目的紅色，帶一點點透明度 */
+    color: #ffffff;
+    text-align: center;
+    padding: 10px 15px;
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    z-index: 10000; /* 確保永遠在最上層，不會被其他東西蓋住 */
+    pointer-events: none; /* 💡 魔法屬性：讓滑鼠可以穿透它，絕對不會擋住底下的按鈕！ */
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+}
+
+/* 確保網頁滑到最底時，頁尾內容不會被這條警告擋住 */
+body {
+    padding-bottom: 45px !important;
+}
+
+/* 如果手機螢幕太小，把字體稍微縮小一點避免破版 */
+@media (max-width: 768px) {
+    body::after {
+        font-size: 0.85rem;
+        padding: 8px 10px;
+    }
+}
+
+/* =========================================
+   🌟 防止手機快速連點造成畫面放大
+   ========================================= */
+button, input, select, textarea, a {
+    touch-action: manipulation;
+}
+
+/* =========================================
    2. 前/後台背景
    ========================================= */
 body.frontend {
@@ -56,6 +97,7 @@ body.backend {
     text-decoration: none;
     font-weight: 600;
     transition: all 0.2s ease;
+    white-space: nowrap !important; /* 🌟 防止文字直排的關鍵 */
 }
 
 .nav-link-custom:hover {
@@ -143,7 +185,7 @@ body.backend {
 }
 
 /* =========================================
-   6. 後台佈局架構 (桌機版：解決遮擋的核心)
+   6. 後台佈局架構 (桌機版)
    ========================================= */
 .app-container {
     display: flex;
@@ -191,119 +233,98 @@ body.backend {
 }
 
 /* =========================================
-   7. 📱 手機與平板版 RWD 徹底修正 (包含前台導覽列)
+   7. 📱 手機與平板版 RWD 徹底修正
    ========================================= */
 @media (max-width: 992px) {
-    /* 前台導覽列：平板縮小邊距 */
     .top-nav {
         padding: 1rem 2rem !important;
     }
 }
 
 @media (max-width: 768px) {
-    /* 🌟 前台導覽列修正：解決字體被垂直擠壓的問題 */
+    /* 🌟 前台導覽列修正 */
     .top-nav {
-        padding: 1rem !important; /* 取消巨大的左右內距 */
-        flex-direction: column !important; /* 改為上下排列：Logo 在上，選單在下 */
-        justify-content: center !important;
+        padding: 15px 10px !important;
+        flex-direction: column !important;
+        align-items: center !important;
         gap: 15px !important;
     }
     .top-nav a.navbar-brand h2 {
-        font-size: 1.8rem !important; /* 縮小 Logo 字體 */
+        font-size: 1.8rem !important;
         text-align: center;
         margin: 0 !important;
     }
     .top-nav > div {
-        /* 選單容器 */
         width: 100%;
-        justify-content: center !important; /* 連結置中 */
-        gap: 15px !important; /* 縮小連結間距，避免撐爆螢幕 */
-        flex-wrap: wrap !important; /* 允許換行 */
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 10px 15px !important;
     }
     .nav-link-custom {
-        font-size: 1.05rem !important; /* 縮小選單字體 */
+        font-size: 1.05rem !important;
+        white-space: nowrap !important; /* 解決文字直排問題 */
     }
 
     /* 🌟 後台佈局修正 */
     .app-container {
-        flex-direction: column; 
+        flex-direction: column !important; 
     }
 
     .sidebar {
         position: relative !important; 
         width: 100% !important;
         height: auto !important;
-        padding: 1rem !important;
+        padding: 15px 10px !important;
         flex-direction: row !important; 
         display: flex !important;
-        overflow-x: auto;
-        white-space: nowrap;
-        z-index: 1000;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        background: linear-gradient(90deg, var(--theme-orange-deep) 0%, var(--theme-orange-light) 100%) !important; /* 解決藍色底線與背景消失 */
+        -webkit-overflow-scrolling: touch;
+        z-index: 1000 !important;
     }
+    
+    .sidebar::-webkit-scrollbar { display: none; }
 
-    /* 隱藏裝飾 */
     .sidebar h2, .sidebar hr, .sidebar small, .sidebar span {
         display: none !important;
     }
 
     .nav-item {
         display: inline-block !important;
-        padding: 0.5rem 1rem !important;
+        padding: 8px 16px !important;
         margin-bottom: 0 !important;
-        margin-right: 0.5rem;
-        font-size: 0.9rem !important;
+        margin-right: 10px !important;
+        font-size: 0.95rem !important;
+        background: rgba(255,255,255,0.15) !important;
+        color: white !important;
+        border-radius: 20px !important;
+        text-decoration: none !important;
     }
 
-    /* 內容區塊回歸全寬，取消左邊距 */
+    .nav-item.active {
+        background: white !important;
+        color: var(--theme-orange-deep) !important;
+    }
+
+    .nav-item.text-danger {
+        background: rgba(220, 53, 69, 0.9) !important;
+        color: white !important;
+    }
+
     .main-content {
         margin-left: 0 !important;
-        padding: 1.5rem !important;
+        padding: 15px !important;
         width: 100% !important;
-    }
-
-    .stats-wrapper {
-        width: 100% !important;
-        margin-left: 0 !important;
     }
 
     .stat-tile-number {
-        font-size: 3rem !important;
+        font-size: 2.2rem !important;
     }
 
     .page-title {
         font-size: 1.8rem !important;
-    }
-}
-/* =========================================
-   🌟 全站防護警告橫幅 (自動套用到所有頁面)
-   ========================================= */
-body::after {
-    content: "⚠️ 2026洪益華動態網頁實作測試 - 非正式網站請勿留真實個資 ⚠️";
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: rgba(220, 53, 69, 0.95); /* 醒目的紅色，帶一點點透明度 */
-    color: #ffffff;
-    text-align: center;
-    padding: 10px 15px;
-    font-size: 1rem;
-    font-weight: bold;
-    letter-spacing: 1px;
-    z-index: 10000; /* 確保永遠在最上層，不會被其他東西蓋住 */
-    pointer-events: none; /* 💡 魔法屬性：讓滑鼠可以穿透它，絕對不會擋住底下的按鈕！ */
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
-}
-
-/* 確保網頁滑到最底時，頁尾內容不會被這條警告擋住 */
-body {
-    padding-bottom: 45px !important;
-}
-
-/* 如果手機螢幕太小，把字體稍微縮小一點避免破版 */
-@media (max-width: 768px) {
-    body::after {
-        font-size: 0.85rem;
-        padding: 8px 10px;
     }
 }
