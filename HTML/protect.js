@@ -1,6 +1,6 @@
 /* HTML/protect.js */
 (function() {
-    // --- 1. SEO 白名單檢查 (讓 Google/Line/FB 爬蟲可以正常讀取) ---
+    // --- 1. SEO 白名單檢查 ---
     var userAgent = navigator.userAgent.toLowerCase();
     var allowedBots = [
         'googlebot', 'bingbot', 'baiduspider', 'yandex', 
@@ -8,36 +8,36 @@
         'telegrambot', 'discordbot', 'pinterest'
     ];
     
-    // 如果是爬蟲，直接結束函式，不執行後面的防護
     for (var i = 0; i < allowedBots.length; i++) {
         if (userAgent.indexOf(allowedBots[i]) !== -1) {
             return;
         }
     }
 
-    // --- 2. 行為攔截 ---
-    
-    // 跳轉函式 (你可以隨時在這裡修改跳轉目標)
-    function redirectToGoogle() {
-        // 為了避免誤判導致無限迴圈，可以加個判斷
+    // --- 2. 暴力清空機制 (無提示瞬間銷毀版) ---
+    function blockAccess() {
+        // 第一時間直接把整個網頁結構徹底清空，不顯示任何文字或提示
+        document.documentElement.innerHTML = "";
+        
+        // 直接執行轉址
         if (window.location.hostname !== "www.google.com") {
             window.location.href = "https://www.google.com";
         }
     }
 
-    // [新增] 動態注入 CSS，徹底禁止滑鼠反白選取文字
+    // 禁止滑鼠反白與 CSS 注入
     var style = document.createElement('style');
     style.innerHTML = `
         * {
-            -webkit-user-select: none !important; /* Chrome, Safari, Opera */
-            -moz-user-select: none !important;    /* Firefox */
-            -ms-user-select: none !important;     /* IE/Edge */
-            user-select: none !important;         /* 現代瀏覽器標準 */
+            -webkit-user-select: none !important; 
+            -moz-user-select: none !important;    
+            -ms-user-select: none !important;     
+            user-select: none !important;         
         }
     `;
     document.head.appendChild(style);
 
-    // [新增] 禁止選取、拖曳、複製、剪下、貼上
+    // 禁止事件：選取、拖曳、複製、剪下、貼上
     var preventEvents = ['selectstart', 'dragstart', 'copy', 'cut', 'paste'];
     preventEvents.forEach(function(eventName) {
         document.addEventListener(eventName, function(e) {
@@ -46,51 +46,72 @@
         }, true);
     });
 
+    // --- 3. 禁止鍵盤與右鍵行為 ---
     // 禁止右鍵選單
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
-        e.stopPropagation(); // 強化攔截
+        e.stopPropagation(); 
     }, true);
 
-    // 禁止鍵盤快捷鍵 (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+C複製)
+    // 禁止鍵盤快捷鍵 (F12, Ctrl+U, Ctrl+S)
     document.addEventListener('keydown', function(e) {
-        // F12
-        if (e.keyCode == 123) {
+        if (e.keyCode == 123) { // F12
             e.preventDefault();
-            redirectToGoogle();
+            blockAccess();
             return false;
         }
-        
-        // Ctrl 組合鍵檢查
         if (e.ctrlKey) {
-            // Shift 組合鍵 (I, J, C)
-            if (e.shiftKey) {
-                if (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67) { // I, J, C
-                    e.preventDefault();
-                    redirectToGoogle();
-                    return false;
-                }
-            }
-            // 單純 Ctrl 組合鍵 (U=原始碼, S=存檔, C=複製, X=剪下)
-            if (e.keyCode == 85 || e.keyCode == 83 || e.keyCode == 67 || e.keyCode == 88) { 
+            if (e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) { // Ctrl+Shift+I / J
                 e.preventDefault();
-                // 這裡按下 Ctrl+C 只是阻擋，不一定每次都要跳轉，但如果要嚴格一點也可以觸發 redirectToGoogle()
-                // 如果不要因為按 Ctrl+C 就跳轉，把 redirectToGoogle() 註解掉即可
-                // redirectToGoogle(); 
+                blockAccess();
+                return false;
+            }
+            if (e.keyCode == 85 || e.keyCode == 83) { // Ctrl+U, Ctrl+S
+                e.preventDefault();
+                blockAccess();
                 return false;
             }
         }
     }, true);
 
-    // --- 3. 進階偵測：Debugger 時間差攻擊 ---
-    // 當使用者硬開開發者工具時，瀏覽器會因為 debugger 指令暫停，產生時間差
+    // --- 4. 多重維度偵測 (每 0.1 秒掃描一次) ---
     setInterval(function() {
-        var start = new Date().getTime();
-        debugger; // 如果 DevTools 開啟，會卡在這裡
-        var end = new Date().getTime();
-        if (end - start > 100) { // 門檻值 (毫秒)
-            redirectToGoogle();
+        // [防護 A] 視窗比例異常偵測 (針對預先開好 F12 的人)
+        var widthDiff = window.outerWidth - window.innerWidth;
+        var heightDiff = window.outerHeight - window.innerHeight;
+        
+        // 容錯值設為 200
+        if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
+            blockAccess();
         }
-    }, 2000); // 每 2 秒檢查一次
+
+        // [防護 B] Debugger 時間差攻擊
+        var start = new Date().getTime();
+        debugger; 
+        var end = new Date().getTime();
+        if (end - start > 50) { // 門檻值 50 毫秒
+            blockAccess();
+        }
+    }, 100); // 這裡改為 100 毫秒 (0.1秒)
+
+    // [防護 C] 只要切換視窗回來，立刻重新檢查
+    document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) {
+            var widthDiff = window.outerWidth - window.innerWidth;
+            var heightDiff = window.outerHeight - window.innerHeight;
+            if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
+                blockAccess();
+            }
+        }
+    });
+
+    // [防護 D] 只要拉動視窗大小，立刻重新檢查
+    window.addEventListener('resize', function() {
+        var widthDiff = window.outerWidth - window.innerWidth;
+        var heightDiff = window.outerHeight - window.innerHeight;
+        if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
+            blockAccess();
+        }
+    });
 
 })();
