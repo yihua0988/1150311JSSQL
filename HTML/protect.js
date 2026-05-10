@@ -76,42 +76,18 @@
 
     // --- 4. 多重維度偵測 (每 0.1 秒掃描一次) ---
     setInterval(function() {
-        // [防護 A] 視窗比例異常偵測 (針對預先開好 F12 的人)
-        var widthDiff = window.outerWidth - window.innerWidth;
-        var heightDiff = window.outerHeight - window.innerHeight;
-        
-        // 容錯值設為 200
-        if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
-            blockAccess();
-        }
+        // 註：已移除「視窗比例異常偵測 (widthDiff/heightDiff)」，避免與網頁縮放功能衝突。
 
-        // [防護 B] Debugger 時間差攻擊
+        // [防護 B] Debugger 時間差攻擊 (防護力極強且不會影響網頁縮放)
         var start = new Date().getTime();
         debugger; 
         var end = new Date().getTime();
         if (end - start > 50) { // 門檻值 50 毫秒
             blockAccess();
         }
-    }, 100); // 這裡改為 100 毫秒 (0.1秒)
+    }, 100); // 100 毫秒 (0.1秒)
 
-    // [防護 C] 只要切換視窗回來，立刻重新檢查
-    document.addEventListener("visibilitychange", function() {
-        if (!document.hidden) {
-            var widthDiff = window.outerWidth - window.innerWidth;
-            var heightDiff = window.outerHeight - window.innerHeight;
-            if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
-                blockAccess();
-            }
-        }
-    });
-
-    // [防護 D] 只要拉動視窗大小，立刻重新檢查
-    window.addEventListener('resize', function() {
-        var widthDiff = window.outerWidth - window.innerWidth;
-        var heightDiff = window.outerHeight - window.innerHeight;
-        if ((widthDiff > 200 || heightDiff > 200) && window.innerWidth > 500) {
-            blockAccess();
-        }
-    });
+    // 註：已移除 visibilitychange 與 resize 事件中的尺寸檢查，
+    // 交由上方的 Debugger 迴圈與鍵盤監聽來負責防護即可。
 
 })();
